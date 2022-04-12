@@ -21,6 +21,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         run_parameters.test_group_id
     )); // Debug
 
+    // //////////////////////////////////////////////////////////////
+    // Collect information of all instances within the test
+    // //////////////////////////////////////////////////////////////
     let instance_info = InstanceInfo::new(&client, &run_parameters).await?;
     client.record_message(format!("Debug: instance_info = {:?}", instance_info)); // Debug
 
@@ -35,6 +38,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         )
         .await?;
 
+    // //////////////////////////////////////////////////////////////
+    // Connect to bootstrap node
+    // //////////////////////////////////////////////////////////////
+    // NOTE: Assumes only 1 bootstrap node
+    if !instance_info.is_bootstrap_node {
+        let bootstrap_node = other_instances
+            .iter()
+            .find(|&i| i.is_bootstrap_node)
+            .expect("Bootstrap node");
+        client.record_message(format!("bootstrap_node: {:?}", bootstrap_node)); // Debug
+    }
+
     client.record_success().await?;
 
     Ok(())
@@ -42,11 +57,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 #[derive(Debug, Serialize, Deserialize)]
 struct InstanceInfo {
-    // The identifier of this test instance within the test
-    id: String,
+    // The sequence number of this test instance within the test
+    seq: u64,
     // The sequence number of this test instance within its group
     seq_within_group: u64,
     address: SocketAddr,
+    is_bootstrap_node: bool,
 }
 
 impl InstanceInfo {
@@ -54,16 +70,33 @@ impl InstanceInfo {
         client: &Client,
         run_parameters: &RunParameters,
     ) -> Result<Self, Box<dyn std::error::Error>> {
+        let seq = get_instance_seq(client, run_parameters).await?;
         let seq_within_group = get_instance_seq_within_group(client, run_parameters).await?;
-        let id = format!("{}:{}", run_parameters.test_group_id, seq_within_group);
         let address = SocketAddr::new(get_subnet_addr(&run_parameters.test_subnet)?, 9000);
 
+        // NOTE: For now, #1 is bootstrap node
+        let is_bootstrap_node = seq == 1;
+
         Ok(InstanceInfo {
-            id,
+            seq,
             seq_within_group,
             address,
+            is_bootstrap_node,
         })
     }
+}
+
+// Returns the sequence number of this test instance within the test
+async fn get_instance_seq(
+    client: &Client,
+    run_parameters: &RunParameters,
+) -> Result<u64, testground::errors::Error> {
+    client
+        .signal(format!(
+            "get_instance_seq:{}",
+            run_parameters.test_run.clone()
+        ))
+        .await
 }
 
 // Returns the sequence number of this test instance within its group
@@ -110,7 +143,7 @@ async fn collect_instance_information(
         match stream.next().await {
             Some(Ok(other)) => {
                 let other_instance_info: InstanceInfo = serde_json::from_str(&other)?;
-                if other_instance_info.id != instance_info.id {
+                if other_instance_info.seq != instance_info.seq {
                     other_instances.push(other_instance_info);
                 }
             }
