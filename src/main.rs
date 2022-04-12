@@ -10,6 +10,7 @@ use tokio_stream::StreamExt;
 const TOPIC_INSTANCE_INFORMATION: &str = "topic_instance_information";
 const STATE_COMPLETED_TO_COLLECT_INSTANCE_INFORMATION: &str =
     "state_completed_to_collect_instance_information";
+const STATE_COMPLETED_TO_RUN_FIND_NODE_QUERY: &str = "state_completed_to_run_find_node_query";
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -60,25 +61,63 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .await?;
 
     // //////////////////////////////////////////////////////////////
-    // Connect to bootstrap node
+    // Star topology
     // //////////////////////////////////////////////////////////////
-    // NOTE: Assumes only 1 bootstrap node
-    if !instance_info.is_bootstrap_node {
+    // NOTE: Assumes only 1 bootstrap node.
+    if instance_info.is_bootstrap_node {
+        for i in other_instances.iter() {
+            discv5.add_enr(i.enr.clone())?;
+        }
+    } else {
         let bootstrap_node = other_instances
             .iter()
             .find(|&i| i.is_bootstrap_node)
             .expect("Bootstrap node");
+
+        discv5.add_enr(bootstrap_node.enr.clone())?;
         client.record_message(format!("bootstrap_node: {:?}", bootstrap_node)); // Debug
     }
 
+    // //////////////////////////////////////////////////////////////
+    // Run FIND_NODE query
+    // //////////////////////////////////////////////////////////////
+    // NOTE: The instance with the last sequence number is target_node.
+    //      -> should add a field  is_target_node to InstanceInfo?
+    match other_instances
+        .iter()
+        .find(|&i| i.seq == run_parameters.test_instance_count)
+    {
+        None => {
+            client.record_message("Skipped to run FIND_NODE query because this is the target_node.")
+        }
+        Some(target_node) => {
+            let enrs = discv5
+                .find_node(target_node.enr.node_id())
+                .await
+                .expect("FIND_NODE query");
+            client.record_message(format!("Enrs: {:?}", enrs));
+        }
+    }
+
+    client
+        .signal_and_wait(
+            STATE_COMPLETED_TO_RUN_FIND_NODE_QUERY,
+            run_parameters.test_instance_count,
+        )
+        .await?;
+
+    // //////////////////////////////////////////////////////////////
+    // Shutdown Discovery v5 server
+    // //////////////////////////////////////////////////////////////
     client.record_success().await?;
+    discv5.shutdown();
 
     Ok(())
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 struct InstanceInfo {
-    // The sequence number of this test instance within the test
+    // The sequence number of this test instance within the test.
     seq: u64,
     enr: Enr<CombinedKey>,
     is_bootstrap_node: bool,
@@ -92,7 +131,7 @@ impl InstanceInfo {
     ) -> Result<Self, Box<dyn std::error::Error>> {
         let seq = get_instance_seq(client, run_parameters).await?;
 
-        // NOTE: For now, #1 is bootstrap node
+        // NOTE: For now, #1 is bootstrap node.
         let is_bootstrap_node = seq == 1;
 
         Ok(InstanceInfo {
@@ -103,7 +142,7 @@ impl InstanceInfo {
     }
 }
 
-// Returns the sequence number of this test instance within the test
+// Returns the sequence number of this test instance within the test.
 async fn get_instance_seq(
     client: &Client,
     run_parameters: &RunParameters,
