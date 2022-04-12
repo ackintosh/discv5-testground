@@ -11,5 +11,5 @@ enabled = true
 enabled = true
 
 [[testcases]]
-name = "find-peers"
+name = "find-node"
 instances = { min = 2, max = 2, default = 2 }
