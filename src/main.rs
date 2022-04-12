@@ -81,22 +81,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // //////////////////////////////////////////////////////////////
     // Run FIND_NODE query
     // //////////////////////////////////////////////////////////////
-    // NOTE: The instance with the last sequence number is target_node.
-    //      -> should add a field  is_target_node to InstanceInfo?
-    match other_instances
-        .iter()
-        .find(|&i| i.seq == run_parameters.test_instance_count)
-    {
-        None => {
-            client.record_message("Skipped to run FIND_NODE query because this is the target_node.")
-        }
-        Some(target_node) => {
-            let enrs = discv5
-                .find_node(target_node.enr.node_id())
-                .await
-                .expect("FIND_NODE query");
-            client.record_message(format!("Enrs: {:?}", enrs));
-        }
+    // NOTE: Assumes only 1 target node.
+    if instance_info.is_target_node {
+        client.record_message("Skipped to run FIND_NODE query because this is the target_node.");
+    } else {
+        let target_node = other_instances
+            .iter()
+            .find(|&i| i.is_target_node)
+            .expect("Target node");
+        let enrs = discv5
+            .find_node(target_node.enr.node_id())
+            .await
+            .expect("FIND_NODE query");
+        client.record_message(format!("Enrs: {:?}", enrs));
     }
 
     client
@@ -121,6 +118,7 @@ struct InstanceInfo {
     seq: u64,
     enr: Enr<CombinedKey>,
     is_bootstrap_node: bool,
+    is_target_node: bool,
 }
 
 impl InstanceInfo {
@@ -133,11 +131,14 @@ impl InstanceInfo {
 
         // NOTE: For now, #1 is bootstrap node.
         let is_bootstrap_node = seq == 1;
+        // NOTE: For now, the instance with the last sequence number is target_node.
+        let is_target_node = seq == run_parameters.test_instance_count;
 
         Ok(InstanceInfo {
             seq,
             enr,
             is_bootstrap_node,
+            is_target_node,
         })
     }
 }
