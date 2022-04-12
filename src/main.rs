@@ -1,3 +1,5 @@
+use discv5::enr::{CombinedKey, EnrBuilder};
+use discv5::{Discv5, Discv5Config};
 use ipnetwork::IpNetwork;
 use serde::{Deserialize, Serialize};
 use std::net::{IpAddr, SocketAddr};
@@ -6,8 +8,7 @@ use testground::RunParameters;
 use tokio_stream::StreamExt;
 
 const TOPIC_INSTANCE_INFORMATION: &str = "topic_instance_information";
-const STATE_COMPLETED_TO_COLLECT_INSTANCE_INFORMATION: &str =
-    "state_completed_to_collect_instance_information";
+const STATE_COMPLETED_TO_START_DISCV5_SERVER: &str = "state_completed_to_start_discv5_server";
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -31,9 +32,22 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         collect_instance_information(&client, &run_parameters, &instance_info).await?;
     client.record_message(format!("{:?}", other_instances)); // Debug
 
+    // //////////////////////////////////////////////////////////////
+    // Start Discovery v5 server
+    // //////////////////////////////////////////////////////////////
+    let enr_key = CombinedKey::generate_secp256k1();
+    let enr = EnrBuilder::new("v4")
+        .build(&enr_key)
+        .expect("Construct an Enr");
+    let mut discv5 = Discv5::new(enr, enr_key, Discv5Config::default())?;
+    discv5
+        .start(instance_info.address.clone())
+        .await
+        .expect("Start Discovery v5 server");
+
     client
         .signal_and_wait(
-            STATE_COMPLETED_TO_COLLECT_INSTANCE_INFORMATION,
+            STATE_COMPLETED_TO_START_DISCV5_SERVER,
             run_parameters.test_instance_count,
         )
         .await?;
