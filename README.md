@@ -15,7 +15,7 @@ $ testground run single \
     --testcase=find-node \
     --builder=docker:generic \
     --runner=local:docker \
-    --instances=2 \
+    --instances=3 \
     --wait
 ```
 
@@ -23,6 +23,10 @@ $ testground run single \
 
 ### testcase: find-node
 
+- Star topology
+  - ![star-topology](https://raw.githubusercontent.com/ackintosh/test-plan-discv5/cb6ef043146c8de0a3c6967d9c423a8613aa132d/diagrams/find_nodes-star_topology.png)
+  - Bootstrap node knows all the nodes in the test.
+  - Other nodes, including Target node, knows only Bootstrap node.
 - Narrative
   - **Warm up**
     - All nodes boot up

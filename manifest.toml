@@ -12,4 +12,4 @@ enabled = true
 
 [[testcases]]
 name = "find-node"
-instances = { min = 3, max = 3, default = 3 }
+instances = { min = 3, max = 100, default = 3 }
