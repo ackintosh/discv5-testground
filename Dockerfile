@@ -8,7 +8,6 @@ RUN cd plan && cargo build
 
 FROM debian:bullseye-slim
 COPY --from=builder /usr/src/test-plan/plan/target/debug/test-plan-discv5 /usr/local/bin/test-plan-discv5
-EXPOSE 6060
 
 # ENV RUST_LOG=debug
 
