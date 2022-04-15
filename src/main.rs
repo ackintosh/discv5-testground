@@ -1,5 +1,5 @@
 use discv5::enr::{CombinedKey, Enr, EnrBuilder, NodeId};
-use discv5::{Discv5, Discv5Config, Discv5Event, Key};
+use discv5::{Discv5, Discv5Config, Key};
 use ipnetwork::IpNetwork;
 use serde::{Deserialize, Serialize};
 use std::net::{IpAddr, SocketAddr};
@@ -7,6 +7,7 @@ use testground::client::Client;
 use testground::RunParameters;
 use tokio::task;
 use tokio_stream::StreamExt;
+use tracing::{debug, info};
 
 const TOPIC_INSTANCE_INFORMATION: &str = "aaa_topic_instance_information";
 const STATE_COMPLETED_TO_COLLECT_INSTANCE_INFORMATION: &str =
@@ -24,14 +25,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let _ = tracing_subscriber::fmt()
         .with_env_filter(env_filter)
         .try_init();
-
-    client.record_message(format!(
-        "plan: {}, case: {}, run: {}, group_id: {}",
-        run_parameters.test_plan,
-        run_parameters.test_case,
-        run_parameters.test_run,
-        run_parameters.test_group_id
-    )); // Debug
 
     // ////////////////////////
     // Construct a local Enr
@@ -56,7 +49,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut event_stream = discv5.event_stream().await.expect("Discv5Event");
     task::spawn(async move {
         while let Some(event) = event_stream.recv().await {
-            println!("Discv5Event: {:?}", event);
+            info!("Discv5Event: {:?}", event);
         }
     });
 
@@ -64,11 +57,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Collect information of all instances within the test
     // //////////////////////////////////////////////////////////////
     let instance_info = InstanceInfo::new(&client, &run_parameters, discv5.local_enr()).await?;
-    client.record_message(format!("Debug: instance_info = {:?}", instance_info)); // Debug
+    debug!("instance_info: {:?}", instance_info);
 
     let other_instances =
         collect_instance_information(&client, &run_parameters, &instance_info).await?;
-    client.record_message(format!("Debug: other_instances = {:?}", other_instances)); // Debug
+    debug!("other_instances: {:?}", other_instances);
 
     client
         .signal_and_wait(
@@ -92,7 +85,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             .expect("Bootstrap node");
 
         discv5.add_enr(bootstrap_node.enr.clone())?;
-        client.record_message(format!("bootstrap_node: {:?}", bootstrap_node)); // Debug
     }
 
     // //////////////////////////////////////////////////////////////
@@ -108,11 +100,33 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             .iter()
             .find(|&i| i.is_target_node)
             .expect("Target node");
+
+        {
+            // Emit distance to the nodes to logs.
+            let key: Key<NodeId> = discv5.local_enr().node_id().into();
+
+            let bootstrap_node = other_instances
+                .iter()
+                .find(|&i| i.is_bootstrap_node)
+                .expect("Bootstrap node");
+            let bootstrap_key: Key<NodeId> = bootstrap_node.enr.node_id().into();
+            info!(
+                "Distance between `self` and `bootstrap`: {}",
+                key.log2_distance(&bootstrap_key).expect("Distance")
+            );
+
+            let target_key: Key<NodeId> = target_node.enr.node_id().into();
+            info!(
+                "Distance between `self` and `target`: {}",
+                key.log2_distance(&target_key).expect("Distance")
+            );
+        }
+
         let enrs = discv5
             .find_node(target_node.enr.node_id())
             .await
             .expect("FIND_NODE query");
-        client.record_message(format!("Enrs: {:?}", enrs));
+        info!("ENRs: {:?}", enrs);
     }
 
     client
