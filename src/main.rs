@@ -1,13 +1,14 @@
-use discv5::enr::{CombinedKey, Enr, EnrBuilder};
-use discv5::{Discv5, Discv5Config};
+use discv5::enr::{CombinedKey, Enr, EnrBuilder, NodeId};
+use discv5::{Discv5, Discv5Config, Discv5Event, Key};
 use ipnetwork::IpNetwork;
 use serde::{Deserialize, Serialize};
 use std::net::{IpAddr, SocketAddr};
 use testground::client::Client;
 use testground::RunParameters;
+use tokio::task;
 use tokio_stream::StreamExt;
 
-const TOPIC_INSTANCE_INFORMATION: &str = "topic_instance_information";
+const TOPIC_INSTANCE_INFORMATION: &str = "aaa_topic_instance_information";
 const STATE_COMPLETED_TO_COLLECT_INSTANCE_INFORMATION: &str =
     "state_completed_to_collect_instance_information";
 const STATE_COMPLETED_TO_RUN_FIND_NODE_QUERY: &str = "state_completed_to_run_find_node_query";
@@ -15,6 +16,14 @@ const STATE_COMPLETED_TO_RUN_FIND_NODE_QUERY: &str = "state_completed_to_run_fin
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let (client, run_parameters) = testground::client::Client::new().await?;
+
+    // Enable tracing.
+    let env_filter = tracing_subscriber::EnvFilter::try_from_default_env()
+        .or_else(|_| tracing_subscriber::EnvFilter::try_new("info"))
+        .expect("EnvFilter");
+    let _ = tracing_subscriber::fmt()
+        .with_env_filter(env_filter)
+        .try_init();
 
     client.record_message(format!(
         "plan: {}, case: {}, run: {}, group_id: {}",
@@ -25,7 +34,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     )); // Debug
 
     // ////////////////////////
-    // Generate Enr
+    // Construct a local Enr
     // ////////////////////////
     let enr_key = CombinedKey::generate_secp256k1();
     let enr = EnrBuilder::new("v4")
@@ -43,6 +52,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .await
         .expect("Start Discovery v5 server");
 
+    // Observe Discv5 events.
+    let mut event_stream = discv5.event_stream().await.expect("Discv5Event");
+    task::spawn(async move {
+        while let Some(event) = event_stream.recv().await {
+            println!("Discv5Event: {:?}", event);
+        }
+    });
+
     // //////////////////////////////////////////////////////////////
     // Collect information of all instances within the test
     // //////////////////////////////////////////////////////////////
@@ -51,7 +68,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let other_instances =
         collect_instance_information(&client, &run_parameters, &instance_info).await?;
-    client.record_message(format!("{:?}", other_instances)); // Debug
+    client.record_message(format!("Debug: other_instances = {:?}", other_instances)); // Debug
 
     client
         .signal_and_wait(
@@ -79,11 +96,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     // //////////////////////////////////////////////////////////////
-    // Run FIND_NODE query
+    // Run FINDNODE query
     // //////////////////////////////////////////////////////////////
     // NOTE: Assumes only 1 target node.
     if instance_info.is_target_node {
-        client.record_message("Skipped to run FIND_NODE query because this is the target_node.");
+        println!("Skipped to run FIND_NODE query because this is the target node.");
+    } else if instance_info.is_bootstrap_node {
+        println!("Skipped to run FIND_NODE query because this is the bootstrap node.");
     } else {
         let target_node = other_instances
             .iter()

@@ -269,6 +269,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "delay_map"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6716ce9729be9628979ae1ff63e8bc8b7ad53b5472a2633bf079607a55328d36"
+dependencies = [
+ "futures",
+ "tokio-util 0.6.9",
+]
+
+[[package]]
 name = "der"
 version = "0.3.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -300,12 +310,11 @@ dependencies = [
 [[package]]
 name = "discv5"
 version = "0.1.0-beta.13"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ed8f54486179d5a7f11e1f5526f49d925a411a96c1141a707bd5f071be2ab630"
 dependencies = [
  "aes",
  "aes-gcm",
  "arrayvec",
+ "delay_map",
  "digest 0.10.3",
  "enr",
  "fnv",
@@ -1498,6 +1507,7 @@ dependencies = [
  "testground",
  "tokio",
  "tokio-stream",
+ "tracing-subscriber",
 ]
 
 [[package]]

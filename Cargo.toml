@@ -16,3 +16,4 @@ serde_json = "1.0.79"
 testground = { git = "https://github.com/ackintosh/sdk-rust.git", rev = "a86e5ff37172b2c42880eae22e630fc936da40ba" }
 tokio = { version = "1.17.0", features = ["macros"] }
 tokio-stream = "0.1.8"
+tracing-subscriber = "0.3.11"
