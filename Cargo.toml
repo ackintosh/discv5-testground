@@ -6,13 +6,13 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-#backtrace = "0.3.64"
-discv5 = "0.1.0-beta.13"
+# TODO: update discv5 once the PR is merged: https://github.com/sigp/discv5/pull/110
+discv5 = { git = "https://github.com/ackintosh/discv5.git", branch = "fix-issue-108" }
 if-addrs = "0.7.0"
 ipnetwork = "0.18.0"
-#testground = { git = "https://github.com/testground/sdk-rust/", rev = "5d6daf6ab322c995901467d32fff10aa0e8747d2" }
 serde = "1.0.136"
 serde_json = "1.0.79"
+# TODO: update testground once the PR is merged: https://github.com/testground/sdk-rust/pull/11
 testground = { git = "https://github.com/ackintosh/sdk-rust.git", rev = "a86e5ff37172b2c42880eae22e630fc936da40ba" }
 tokio = { version = "1.17.0", features = ["macros"] }
 tokio-stream = "0.1.8"
