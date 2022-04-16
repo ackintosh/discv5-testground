@@ -1,6 +1,8 @@
-# test-plan-discv5
+# Testground test plans for discv5
 
-[Testground](https://github.com/testground/testground) test plans for [discv5](https://github.com/sigp/discv5).
+[![CI](https://github.com/ackintosh/test-plan-discv5/actions/workflows/ci.yml/badge.svg)](https://github.com/ackintosh/test-plan-discv5/actions/workflows/ci.yml)
+
+This repository contains [Testground](https://github.com/testground/testground) test plans for [discv5](https://github.com/sigp/discv5).
 
 ## Getting started
 
