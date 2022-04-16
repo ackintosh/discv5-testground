@@ -52,3 +52,46 @@ jobs:
         with:
           command: clippy
           args: -- -D warnings
+
+  testground:
+    name: Testground runs
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v2
+        with:
+          path: test-plan-discv5
+
+      - name: Checkout testground
+        uses: actions/checkout@v2
+        with:
+          path: testground
+          repository: testground/testground
+
+      - name: Setup Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: "1.16.x"
+
+      - name: Install testground
+        run: make install
+        working-directory: testground
+
+      - name: Run testground daemon
+        run: testground daemon &
+
+      - name: Import testground plans
+        run: testground plan import --from test-plan-discv5
+
+      - name: Run testground plan (test-plan-discv5:find-node)
+        run: |
+          testground run single \
+            --plan=test-plan-discv5 \
+            --testcase=find-node \
+            --builder=docker:generic \
+            --runner=local:docker \
+            --instances=3 \
+            --wait
