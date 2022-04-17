@@ -30,7 +30,7 @@ $ testground run single \
 - Star topology
   - ![star-topology](https://raw.githubusercontent.com/ackintosh/test-plan-discv5/b2d775a1c78ce8c76cf3e7f64eb52acee813b722/diagrams/find_nodes-star_topology.png)
   - Bootstrap node knows all the nodes in the test.
-  - Other nodes, including Target node, knows only Bootstrap node.
+  - Other nodes knows only Bootstrap node.
 - Narrative
   - **Warm up**
     - All nodes boot up
