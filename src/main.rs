@@ -91,7 +91,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Run FINDNODE query
     // //////////////////////////////////////////////////////////////
     if instance_info.is_bootstrap_node {
-        println!("Skipped to run FIND_NODE query because this is the bootstrap node.");
+        println!("Skipped to run FINDNODE query because this is the bootstrap node.");
     } else {
         let key: Key<NodeId> = discv5.local_enr().node_id().into();
         let bootstrap_node = other_instances
@@ -120,7 +120,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             let enrs = discv5
                 .find_node(target.enr.node_id())
                 .await
-                .expect("FIND_NODE query");
+                .expect("FINDNODE query");
             info!("ENRs: {:?}", enrs);
         }
     }
