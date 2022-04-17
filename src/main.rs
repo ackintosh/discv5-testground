@@ -74,6 +74,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Star topology
     // //////////////////////////////////////////////////////////////
     // NOTE: Assumes only 1 bootstrap node.
+    let key: Key<NodeId> = discv5.local_enr().node_id().into();
     if instance_info.is_bootstrap_node {
         for i in other_instances.iter() {
             discv5.add_enr(i.enr.clone())?;
@@ -84,6 +85,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             .find(|&i| i.is_bootstrap_node)
             .expect("Bootstrap node");
 
+        // Emit distance to the bootstrap node.
+        let bootstrap_key: Key<NodeId> = bootstrap_node.enr.node_id().into();
+        info!(
+            "Distance between `self` and `bootstrap`: {}",
+            key.log2_distance(&bootstrap_key).expect("Distance")
+        );
+
         discv5.add_enr(bootstrap_node.enr.clone())?;
     }
 
@@ -93,24 +101,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     if instance_info.is_bootstrap_node {
         println!("Skipped to run FINDNODE query because this is the bootstrap node.");
     } else {
-        let key: Key<NodeId> = discv5.local_enr().node_id().into();
-        let bootstrap_node = other_instances
-            .iter()
-            .find(|&i| i.is_bootstrap_node)
-            .expect("Bootstrap node");
-        let bootstrap_key: Key<NodeId> = bootstrap_node.enr.node_id().into();
-
         for target in other_instances {
             if target.is_bootstrap_node {
                 continue;
             }
 
-            // Emit distance to the nodes to logs.
-            info!(
-                "Distance between `self` and `bootstrap`: {}",
-                key.log2_distance(&bootstrap_key).expect("Distance")
-            );
-
+            // Emit distance to the target.
             let target_key: Key<NodeId> = target.enr.node_id().into();
             info!(
                 "Distance between `self` and `target`: {}",
