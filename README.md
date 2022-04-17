@@ -17,7 +17,7 @@ $ testground run single \
     --testcase=find-node \
     --builder=docker:generic \
     --runner=local:docker \
-    --instances=3 \
+    --instances=5 \
     --wait
 ```
 
