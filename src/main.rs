@@ -90,43 +90,39 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // //////////////////////////////////////////////////////////////
     // Run FINDNODE query
     // //////////////////////////////////////////////////////////////
-    // NOTE: Assumes only 1 target node.
-    if instance_info.is_target_node {
-        println!("Skipped to run FIND_NODE query because this is the target node.");
-    } else if instance_info.is_bootstrap_node {
+    if instance_info.is_bootstrap_node {
         println!("Skipped to run FIND_NODE query because this is the bootstrap node.");
     } else {
-        let target_node = other_instances
+        let key: Key<NodeId> = discv5.local_enr().node_id().into();
+        let bootstrap_node = other_instances
             .iter()
-            .find(|&i| i.is_target_node)
-            .expect("Target node");
+            .find(|&i| i.is_bootstrap_node)
+            .expect("Bootstrap node");
+        let bootstrap_key: Key<NodeId> = bootstrap_node.enr.node_id().into();
 
-        {
+        for target in other_instances {
+            if target.is_bootstrap_node {
+                continue;
+            }
+
             // Emit distance to the nodes to logs.
-            let key: Key<NodeId> = discv5.local_enr().node_id().into();
-
-            let bootstrap_node = other_instances
-                .iter()
-                .find(|&i| i.is_bootstrap_node)
-                .expect("Bootstrap node");
-            let bootstrap_key: Key<NodeId> = bootstrap_node.enr.node_id().into();
             info!(
                 "Distance between `self` and `bootstrap`: {}",
                 key.log2_distance(&bootstrap_key).expect("Distance")
             );
 
-            let target_key: Key<NodeId> = target_node.enr.node_id().into();
+            let target_key: Key<NodeId> = target.enr.node_id().into();
             info!(
                 "Distance between `self` and `target`: {}",
                 key.log2_distance(&target_key).expect("Distance")
             );
-        }
 
-        let enrs = discv5
-            .find_node(target_node.enr.node_id())
-            .await
-            .expect("FIND_NODE query");
-        info!("ENRs: {:?}", enrs);
+            let enrs = discv5
+                .find_node(target.enr.node_id())
+                .await
+                .expect("FIND_NODE query");
+            info!("ENRs: {:?}", enrs);
+        }
     }
 
     client
@@ -151,7 +147,6 @@ struct InstanceInfo {
     seq: u64,
     enr: Enr<CombinedKey>,
     is_bootstrap_node: bool,
-    is_target_node: bool,
 }
 
 impl InstanceInfo {
@@ -164,14 +159,11 @@ impl InstanceInfo {
 
         // NOTE: For now, #1 is bootstrap node.
         let is_bootstrap_node = seq == 1;
-        // NOTE: For now, the instance with the last sequence number is target_node.
-        let is_target_node = seq == run_parameters.test_instance_count;
 
         Ok(InstanceInfo {
             seq,
             enr,
             is_bootstrap_node,
-            is_target_node,
         })
     }
 }
