@@ -33,6 +33,6 @@ $ testground run single \
   - Other nodes knows only Bootstrap node.
 - Narrative
   - **Warm up**
-    - All nodes boot up
+    - All nodes boot up.
   - **Act I**
-    - Each node calls FINDNODE query once
+    - Each node calls FINDNODE to find all other nodes.
