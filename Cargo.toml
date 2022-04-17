@@ -9,11 +9,11 @@ edition = "2021"
 # TODO: update discv5 once the PR is merged: https://github.com/sigp/discv5/pull/110
 discv5 = { git = "https://github.com/ackintosh/discv5.git", branch = "fix-issue-108" }
 if-addrs = "0.7.0"
-ipnetwork = "0.18.0"
+ipnetwork = "0.19.0"
 serde = "1.0.136"
 serde_json = "1.0.79"
-# TODO: update testground once the PR is merged: https://github.com/testground/sdk-rust/pull/11
-testground = { git = "https://github.com/ackintosh/sdk-rust.git", rev = "a86e5ff37172b2c42880eae22e630fc936da40ba" }
+# TODO: Update testground once the next version of v0.1.1 has been released.
+testground = { git = "https://github.com/testground/sdk-rust.git", rev = "1aa09bef881d04272ad6d2ab35e770de2a2f5eb1" }
 tokio = { version = "1.17.0", features = ["macros"] }
 tokio-stream = "0.1.8"
 tracing = "0.1.33"
