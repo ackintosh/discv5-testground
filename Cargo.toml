@@ -9,7 +9,7 @@ edition = "2021"
 # TODO: update discv5 once the PR is merged: https://github.com/sigp/discv5/pull/110
 discv5 = { git = "https://github.com/ackintosh/discv5.git", branch = "fix-issue-108" }
 if-addrs = "0.7.0"
-ipnetwork = "0.18.0"
+ipnetwork = "0.19.0"
 serde = "1.0.136"
 serde_json = "1.0.79"
 # TODO: Update testground once the next version of v0.1.1 has been released.
