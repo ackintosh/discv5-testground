@@ -113,11 +113,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 key.log2_distance(&target_key).expect("Distance")
             );
 
-            let enrs = discv5
-                .find_node(target.enr.node_id())
-                .await
-                .expect("FINDNODE query");
-            info!("ENRs: {:?}", enrs);
+            if let Some(enr) = discv5.find_enr(&target.enr.node_id()) {
+                info!(
+                    "The target is already exists in the routing table. ENR: {:?}",
+                    enr
+                );
+            } else {
+                let enrs = discv5
+                    .find_node(target.enr.node_id())
+                    .await
+                    .expect("FINDNODE query");
+                info!("ENRs: {:?}", enrs);
+            }
         }
     }
 
