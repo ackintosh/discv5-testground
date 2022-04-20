@@ -1,10 +1,11 @@
+use chrono::Local;
 use discv5::enr::{CombinedKey, Enr, EnrBuilder, NodeId};
 use discv5::{Discv5, Discv5Config, Key};
 use ipnetwork::IpNetwork;
 use serde::{Deserialize, Serialize};
 use std::net::{IpAddr, SocketAddr};
 use testground::client::Client;
-use testground::RunParameters;
+use testground::{RunParameters, WriteQuery};
 use tokio::task;
 use tokio_stream::StreamExt;
 use tracing::{debug, info};
@@ -125,6 +126,27 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     .expect("FINDNODE query");
                 info!("ENRs: {:?}", enrs);
             }
+
+            // //////////////////////////////////////////////////////////////
+            // Record metrics
+            // //////////////////////////////////////////////////////////////
+            let metrics = discv5.metrics();
+            let write_query = WriteQuery::new(
+                Local::now().into(),
+                format!(
+                    "test-plan-discv5_{}_{}",
+                    run_parameters.test_case, run_parameters.test_run
+                ),
+            )
+            .add_field("active_sessions", metrics.active_sessions as u64)
+            .add_field(
+                "unsolicited_requests_per_second",
+                metrics.unsolicited_requests_per_second as f64,
+            )
+            .add_field("bytes_sent", metrics.bytes_sent as u64)
+            .add_field("bytes_recv", metrics.bytes_recv as u64)
+            .add_tag("instance_seq", instance_info.seq);
+            client.record_metric(write_query).await?;
         }
     }
 
