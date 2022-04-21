@@ -83,11 +83,32 @@ jobs:
       - name: Run testground daemon
         run: testground daemon &
 
-      - name: Import testground plans
-        run: testground plan import --from test-plan-discv5
+      # ########################################
+      # Run example plan
+      # NOTE:
+      #   * Testground starts containers (e.g. InfluxDB) on its first run.
+      #   * In order to ensure that the containers are ready at running `find-node` plan later, run the example plan as trigger for the startups.
+      # ########################################
+      - name: Import example plan
+        run: testground plan import --from testground/plans/example-rust
+
+      - name: Run example plan
+        run: |
+          testground run single \
+            --plan=example-rust \
+            --testcase=tcp-connect \
+            --builder=docker:generic \
+            --runner=local:docker \
+            --wait
 
       - name: Wait until InfluxDB ready
         run: test-plan-discv5/.github/wait_until_influxdb_ready.sh
+
+      # ########################################
+      # Run find-node test plan
+      # ########################################
+      - name: Import testground plans
+        run: testground plan import --from test-plan-discv5
 
       - name: Run testground plan (test-plan-discv5:find-node)
         run: |
