@@ -86,6 +86,9 @@ jobs:
       - name: Import testground plans
         run: testground plan import --from test-plan-discv5
 
+      - name: Wait until InfluxDB ready
+        run: test-plan-discv5/.github/wait_until_influxdb_ready.sh
+
       - name: Run testground plan (test-plan-discv5:find-node)
         run: |
           testground run single \
