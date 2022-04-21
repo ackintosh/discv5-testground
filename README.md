@@ -36,3 +36,18 @@ $ testground run single \
     - All nodes boot up.
   - **Act I**
     - Each node calls FINDNODE to find all other nodes.
+
+## Metrics
+
+Metrics are stored into the metrics store, InfluxDB. The metrics can be visualized with Grafana, bundled with Testground. 
+
+Open Grafana (localhost:3000) and run the following query.
+
+```sql
+select
+  *
+from
+  "test-plan-discv5_find-node_{run_id}"
+group by
+  instance_seq
+```
