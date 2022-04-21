@@ -114,10 +114,10 @@ jobs:
       # ########################################
       # Run find-node test plan
       # ########################################
-      - name: Import testground plans
+      - name: Import test plans from test-plan-discv5
         run: testground plan import --from test-plan-discv5
 
-      - name: Run testground plan (test-plan-discv5:find-node)
+      - name: Run test-plan-discv5:find-node
         run: |
           testground run single \
             --plan=test-plan-discv5 \
