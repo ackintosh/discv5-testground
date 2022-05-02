@@ -12,7 +12,7 @@ discv5 = { git = "https://github.com/ackintosh/discv5.git", branch = "fix-issue-
 if-addrs = "0.7.0"
 ipnetwork = "0.19.0"
 serde = "1.0.136"
-serde_json = "1.0.79"
+serde_json = "1.0.80"
 # TODO: Update testground once the next version of v0.1.1 has been released.
 testground = { git = "https://github.com/testground/sdk-rust.git", rev = "5c50ba4f63d2aff6b815cfbfcb0c8f9e4d73809e" }
 tokio = { version = "1.18.0", features = ["macros"] }
