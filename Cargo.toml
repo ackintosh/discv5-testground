@@ -15,7 +15,7 @@ serde = "1.0.136"
 serde_json = "1.0.81"
 # TODO: Update testground once the next version of v0.1.1 has been released.
 testground = { git = "https://github.com/testground/sdk-rust.git", rev = "5c50ba4f63d2aff6b815cfbfcb0c8f9e4d73809e" }
-tokio = { version = "1.18.0", features = ["macros"] }
+tokio = { version = "1.18.1", features = ["macros"] }
 tokio-stream = "0.1.8"
 tracing = "0.1.33"
 tracing-subscriber = "0.3.11"
