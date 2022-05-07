@@ -155,12 +155,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     info!("Found ENRs: {:?}", enrs);
 
                     // The target node should be found because the bootstrap node knows all the nodes in our star topology.
-                    if enrs.iter().any(|enr| {
-                        enr.node_id() == target.enr.node_id()
-                    }) {
+                    if enrs.iter().any(|enr| enr.node_id() == target.enr.node_id()) {
                         info!("Found the target");
                     } else {
-                        error!("Couldn't find the target. node_id: {}", target.enr.node_id());
+                        error!(
+                            "Couldn't find the target. node_id: {}",
+                            target.enr.node_id()
+                        );
                         failed = true;
                     }
                 }
@@ -200,7 +201,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Record result of this test and shutdown Discovery v5 server
     // //////////////////////////////////////////////////////////////
     if failed {
-        client.record_failure("Failures have happened, please check error logs for details.").await?;
+        client
+            .record_failure("Failures have happened, please check error logs for details.")
+            .await?;
     } else {
         client.record_success().await?;
     }
