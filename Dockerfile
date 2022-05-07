@@ -18,6 +18,6 @@ RUN cd plan && cargo install --path .
 FROM debian:bullseye-slim
 COPY --from=builder /usr/local/cargo/bin/test-plan-discv5 /usr/local/bin/test-plan-discv5
 
-# ENV RUST_LOG=debug
+ENV RUST_LOG=trace
 
 ENTRYPOINT ["test-plan-discv5"]

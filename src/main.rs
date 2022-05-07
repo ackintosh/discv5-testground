@@ -8,11 +8,12 @@ use testground::client::Client;
 use testground::{RunParameters, WriteQuery};
 use tokio::task;
 use tokio_stream::StreamExt;
-use tracing::{debug, info};
+use tracing::{debug, error, info};
 
 const TOPIC_INSTANCE_INFORMATION: &str = "aaa_topic_instance_information";
 const STATE_COMPLETED_TO_COLLECT_INSTANCE_INFORMATION: &str =
     "state_completed_to_collect_instance_information";
+const STATE_COMPLETED_TO_BUILD_TOPOLOGY: &str = "state_completed_to_build_topology";
 const STATE_COMPLETED_TO_RUN_FIND_NODE_QUERY: &str = "state_completed_to_run_find_node_query";
 
 #[tokio::main]
@@ -36,6 +37,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .udp4(9000)
         .build(&enr_key)
         .expect("Construct an Enr");
+
+    info!("ENR: {:?}", enr);
+    info!("NodeId: {}", enr.node_id());
 
     // //////////////////////////////////////////////////////////////
     // Start Discovery v5 server
@@ -96,9 +100,27 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         discv5.add_enr(bootstrap_node.enr.clone())?;
     }
 
+    client
+        .signal_and_wait(
+            STATE_COMPLETED_TO_BUILD_TOPOLOGY,
+            run_parameters.test_instance_count,
+        )
+        .await?;
+
+    if instance_info.is_bootstrap_node {
+        let buckets = discv5.kbuckets();
+        for b in buckets.buckets_iter() {
+            for n in b.iter() {
+                info!("Node: node_id: {}, enr: {}", n.key.preimage(), n.value);
+            }
+        }
+    }
+
     // //////////////////////////////////////////////////////////////
     // Run FINDNODE query
     // //////////////////////////////////////////////////////////////
+    let mut failed = false;
+
     if instance_info.is_bootstrap_node {
         println!("Skipped to run FINDNODE query because this is the bootstrap node.");
     } else {
@@ -109,6 +131,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             // Emit distance to the target.
             let target_key: Key<NodeId> = target.enr.node_id().into();
+            info!("target: {}", target.enr.node_id());
             info!(
                 "Distance between `self` and `target`: {}",
                 key.log2_distance(&target_key).expect("Distance")
@@ -124,7 +147,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     .find_node(target.enr.node_id())
                     .await
                     .expect("FINDNODE query");
-                info!("ENRs: {:?}", enrs);
+
+                if enrs.is_empty() {
+                    error!("Found no ENRs");
+                    failed = true;
+                } else {
+                    info!("Found ENRs: {:?}", enrs);
+
+                    // The target node should be found because the bootstrap node knows all the nodes in our star topology.
+                    if enrs.iter().any(|enr| {
+                        enr.node_id() == target.enr.node_id()
+                    }) {
+                        info!("Found the target");
+                    } else {
+                        error!("Couldn't find the target. node_id: {}", target.enr.node_id());
+                        failed = true;
+                    }
+                }
             }
 
             // //////////////////////////////////////////////////////////////
@@ -158,9 +197,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .await?;
 
     // //////////////////////////////////////////////////////////////
-    // Shutdown Discovery v5 server
+    // Record result of this test and shutdown Discovery v5 server
     // //////////////////////////////////////////////////////////////
-    client.record_success().await?;
+    if failed {
+        client.record_failure("Failures have happened, please check error logs for details.").await?;
+    } else {
+        client.record_success().await?;
+    }
     discv5.shutdown();
 
     Ok(())
