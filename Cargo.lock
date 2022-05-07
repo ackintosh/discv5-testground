@@ -313,7 +313,7 @@ dependencies = [
 [[package]]
 name = "discv5"
 version = "0.1.0-beta.13"
-source = "git+https://github.com/ackintosh/discv5.git?branch=fix-issue-108#d79a65dad5e5194b911cc284cb2f32de37b9cef3"
+source = "git+https://github.com/sigp/discv5.git?rev=e6d82a5b04751ecba0e57523a2eec07b61848f99#e6d82a5b04751ecba0e57523a2eec07b61848f99"
 dependencies = [
  "aes",
  "aes-gcm",
@@ -404,9 +404,9 @@ dependencies = [
 
 [[package]]
 name = "enr"
-version = "0.5.1"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "809869a1328bfb586b48c9c0f87761c47c41793a85bcb06f66074a87cafc1bcd"
+checksum = "78d404e58d809811e491badc0bbd49c7441b84c3e9b3dac3baf50ac21f168a1e"
 dependencies = [
  "base64",
  "bs58",
