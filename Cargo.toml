@@ -5,6 +5,10 @@ edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[[bin]]
+name = "test-plan-discv5"
+path = "src/main.rs"
+
 [dependencies]
 chrono = "0.4.19"
 # TODO: update discv5 once the PR is merged: https://github.com/sigp/discv5/pull/110
