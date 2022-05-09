@@ -313,7 +313,7 @@ dependencies = [
 [[package]]
 name = "discv5"
 version = "0.1.0-beta.13"
-source = "git+https://github.com/sigp/discv5.git?rev=e6d82a5b04751ecba0e57523a2eec07b61848f99#e6d82a5b04751ecba0e57523a2eec07b61848f99"
+source = "git+https://github.com/sigp/discv5.git?rev=52114d927dc2b1283e34975c6fae05c6df43b48a#52114d927dc2b1283e34975c6fae05c6df43b48a"
 dependencies = [
  "aes",
  "aes-gcm",

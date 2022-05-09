@@ -13,7 +13,7 @@ path = "src/main.rs"
 chrono = "0.4.19"
 # TODO: update discv5 once the next version has been released: https://github.com/sigp/discv5/pull/118
 # Specifying the patched revision for now:  https://github.com/sigp/discv5/pull/117
-discv5 = { git = "https://github.com/sigp/discv5.git", rev = "e6d82a5b04751ecba0e57523a2eec07b61848f99" }
+discv5 = { git = "https://github.com/sigp/discv5.git", rev = "52114d927dc2b1283e34975c6fae05c6df43b48a" }
 if-addrs = "0.7.0"
 ipnetwork = "0.19.0"
 serde = "1.0.136"
