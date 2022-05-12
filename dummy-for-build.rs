@@ -1,2 +1,4 @@
 // See Dockerfile
-fn main() {}
+fn main() {
+    println!("dummy");
+}
