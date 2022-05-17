@@ -83,30 +83,9 @@ jobs:
       - name: Run testground daemon
         run: testground daemon &
 
-      # ########################################
-      # Run example plan
-      # NOTE:
-      #   * Testground starts containers (e.g. InfluxDB) on its first run.
-      #   * In order to ensure that the containers are ready at running `find-node` plan later, run the example plan as trigger for the startups.
-      # ########################################
-      - name: Checkout sdk-rust
-        uses: actions/checkout@v2
-        with:
-          path: sdk-rust
-          repository: testground/sdk-rust
-
-      - name: Import example plan
-        run: testground plan import --from sdk-rust
-
-      - name: Run example plan
-        run: |
-          testground run single \
-            --plan=sdk-rust \
-            --testcase=example \
-            --builder=docker:generic \
-            --runner=local:docker \
-            --instances=1 \
-            --wait
+      # In order to ensure that the containers are ready at running `find-node` plan later, run the healthcheck subcommand with the --fix option.
+      - name: Run testground healthcheck
+        run: testground healthcheck --runner local:docker --fix
 
       - name: Wait until InfluxDB ready
         run: test-plan-discv5/.github/wait_until_influxdb_ready.sh
