@@ -45,11 +45,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Start Discovery v5 server
     // //////////////////////////////////////////////////////////////
     // SEE: https://github.com/ackintosh/test-plan-discv5/pull/13#issuecomment-1120430861
-    let discv5_config = Discv5Config {
-        request_retries: 5,
-        ..Discv5Config::default()
-    };
-    let mut discv5 = Discv5::new(enr, enr_key, discv5_config)?;
+    let mut discv5 = Discv5::new(enr, enr_key, Discv5Config::default())?;
     discv5
         .start("0.0.0.0:9000".parse::<SocketAddr>()?)
         .await
