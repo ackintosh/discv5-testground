@@ -11,8 +11,9 @@ path = "src/main.rs"
 
 [dependencies]
 chrono = "0.4.19"
-# TODO: update discv5 once the PR is merged: https://github.com/sigp/discv5/pull/110
-discv5 = { git = "https://github.com/ackintosh/discv5.git", branch = "fix-issue-108" }
+# TODO: update discv5 once the next version (beta.14) has been released: https://github.com/sigp/discv5/pull/118
+# Specifying the patched revision for now:  https://github.com/sigp/discv5/pull/122
+discv5 = { git = "https://github.com/sigp/discv5.git", rev = "e02821e75ad2babee934698d9073ee9813bc01ae" }
 if-addrs = "0.7.0"
 ipnetwork = "0.19.0"
 serde = "1.0.137"
