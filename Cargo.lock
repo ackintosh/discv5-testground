@@ -312,8 +312,8 @@ dependencies = [
 
 [[package]]
 name = "discv5"
-version = "0.1.0-beta.13"
-source = "git+https://github.com/sigp/discv5.git?rev=b54b1bb6b2eb97c9f4f6a0f640a49856276480a8#b54b1bb6b2eb97c9f4f6a0f640a49856276480a8"
+version = "0.1.0-beta.14"
+source = "git+https://github.com/sigp/discv5.git?rev=e02821e75ad2babee934698d9073ee9813bc01ae#e02821e75ad2babee934698d9073ee9813bc01ae"
 dependencies = [
  "aes",
  "aes-gcm",
@@ -333,6 +333,7 @@ dependencies = [
  "rlp",
  "sha2",
  "smallvec",
+ "socket2",
  "tokio",
  "tokio-stream",
  "tokio-util 0.6.9",
