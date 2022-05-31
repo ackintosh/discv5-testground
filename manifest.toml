@@ -13,3 +13,6 @@ enabled = true
 [[testcases]]
 name = "find-node"
 instances = { min = 3, max = 100, default = 3 }
+
+  [testcases.params]
+  latency = { type = "int", desc = "latency between peers", unit = "ms", default = 100 }

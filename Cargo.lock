@@ -1520,8 +1520,7 @@ dependencies = [
 [[package]]
 name = "testground"
 version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3a9b61271f34f69d90b003470d06a192597a5797d71841c4256e059957f890c8"
+source = "git+https://github.com/ackintosh/sdk-rust.git?rev=8218ca37b24907ba15cb748c3029dfdb3eab2709#8218ca37b24907ba15cb748c3029dfdb3eab2709"
 dependencies = [
  "clap",
  "futures",

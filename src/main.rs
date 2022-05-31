@@ -44,7 +44,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             ipv6: None,
             enable: true,
             default: LinkShape {
-                latency: 50000000, // TODO: parameterize
+                latency: run_parameters
+                    .test_instance_params
+                    .get("latency")
+                    .ok_or("latency is not specified")?
+                    .parse::<u64>()?
+                    * 1_000_000, // Translate from millisecond to nanosecond
                 jitter: 0,
                 bandwidth: 1048576, // 1Mib
                 filter: FilterAction::Accept,
