@@ -5,12 +5,16 @@ use ipnetwork::IpNetwork;
 use serde::{Deserialize, Serialize};
 use std::net::{IpAddr, SocketAddr};
 use testground::client::Client;
+use testground::network_conf::{
+    FilterAction, LinkShape, NetworkConfiguration, RoutingPolicyType, DEAFULT_DATA_NETWORK,
+};
 use testground::{RunParameters, WriteQuery};
 use tokio::task;
 use tokio_stream::StreamExt;
 use tracing::{debug, error, info};
 
 const TOPIC_INSTANCE_INFORMATION: &str = "aaa_topic_instance_information";
+const STATE_NETWORK_CONFIGURED: &str = "state_network_configured";
 const STATE_COMPLETED_TO_COLLECT_INSTANCE_INFORMATION: &str =
     "state_completed_to_collect_instance_information";
 const STATE_COMPLETED_TO_BUILD_TOPOLOGY: &str = "state_completed_to_build_topology";
@@ -27,6 +31,46 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let _ = tracing_subscriber::fmt()
         .with_env_filter(env_filter)
         .try_init();
+
+    // ////////////////////////
+    // Configure network
+    // ////////////////////////
+    client.wait_network_initialized().await?;
+
+    client
+        .configure_network(NetworkConfiguration {
+            network: DEAFULT_DATA_NETWORK.to_owned(),
+            ipv4: None,
+            ipv6: None,
+            enable: true,
+            default: LinkShape {
+                latency: run_parameters
+                    .test_instance_params
+                    .get("latency")
+                    .ok_or("latency is not specified")?
+                    .parse::<u64>()?
+                    * 1_000_000, // Translate from millisecond to nanosecond
+                jitter: 0,
+                bandwidth: 1048576, // 1Mib
+                filter: FilterAction::Accept,
+                loss: 0.0,
+                corrupt: 0.0,
+                corrupt_corr: 0.0,
+                reorder: 0.0,
+                reorder_corr: 0.0,
+                duplicate: 0.0,
+                duplicate_corr: 0.0,
+            },
+            rules: None,
+            callback_state: STATE_NETWORK_CONFIGURED.to_owned(),
+            callback_target: None,
+            routing_policy: RoutingPolicyType::DenyAll,
+        })
+        .await?;
+
+    client
+        .barrier(STATE_NETWORK_CONFIGURED, run_parameters.test_instance_count)
+        .await?;
 
     // ////////////////////////
     // Construct a local Enr
