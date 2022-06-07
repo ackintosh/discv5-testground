@@ -21,6 +21,6 @@ serde_json = "1.0.81"
 # See: https://github.com/testground/sdk-rust/pull/19
 testground = { git = "https://github.com/ackintosh/sdk-rust.git", rev = "8218ca37b24907ba15cb748c3029dfdb3eab2709" }
 tokio = { version = "1.19.2", features = ["macros"] }
-tokio-stream = "0.1.8"
+tokio-stream = "0.1.9"
 tracing = "0.1.33"
 tracing-subscriber = "0.3.11"
