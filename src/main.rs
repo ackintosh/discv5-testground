@@ -1,9 +1,8 @@
 use chrono::Local;
 use discv5::enr::{CombinedKey, Enr, EnrBuilder, NodeId};
 use discv5::{Discv5, Discv5Config, Key};
-use ipnetwork::IpNetwork;
 use serde::{Deserialize, Serialize};
-use std::net::{IpAddr, SocketAddr};
+use std::net::SocketAddr;
 use testground::client::Client;
 use testground::network_conf::{
     FilterAction, LinkShape, NetworkConfiguration, RoutingPolicyType, DEAFULT_DATA_NETWORK,
