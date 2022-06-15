@@ -344,6 +344,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "discv5-testground"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "discv5",
+ "if-addrs",
+ "ipnetwork",
+ "serde",
+ "serde_json",
+ "testground",
+ "tokio",
+ "tokio-stream",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
 name = "ecdsa"
 version = "0.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1501,29 +1518,13 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "55937e1799185b12863d447f42597ed69d9928686b8d88a1df17376a097d8369"
 
 [[package]]
-name = "test-plan-discv5"
-version = "0.1.0"
-dependencies = [
- "chrono",
- "discv5",
- "if-addrs",
- "ipnetwork",
- "serde",
- "serde_json",
- "testground",
- "tokio",
- "tokio-stream",
- "tracing",
- "tracing-subscriber",
-]
-
-[[package]]
 name = "testground"
-version = "0.2.0"
-source = "git+https://github.com/ackintosh/sdk-rust.git?rev=8218ca37b24907ba15cb748c3029dfdb3eab2709#8218ca37b24907ba15cb748c3029dfdb3eab2709"
+version = "0.3.0"
+source = "git+https://github.com/ackintosh/sdk-rust.git?rev=e5fa2ca77d43047536bd215e6ee6e813face81c8#e5fa2ca77d43047536bd215e6ee6e813face81c8"
 dependencies = [
  "clap",
  "futures",
+ "if-addrs",
  "influxdb",
  "ipnetwork",
  "log",

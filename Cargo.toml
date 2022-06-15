@@ -1,12 +1,12 @@
 [package]
-name = "test-plan-discv5"
+name = "discv5-testground"
 version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [[bin]]
-name = "test-plan-discv5"
+name = "discv5-testground"
 path = "src/main.rs"
 
 [dependencies]
@@ -18,8 +18,8 @@ if-addrs = "0.7.0"
 ipnetwork = "0.19.0"
 serde = "1.0.137"
 serde_json = "1.0.81"
-# See: https://github.com/testground/sdk-rust/pull/19
-testground = { git = "https://github.com/ackintosh/sdk-rust.git", rev = "8218ca37b24907ba15cb748c3029dfdb3eab2709" }
+# See: https://github.com/testground/sdk-rust/pull/22
+testground = { git = "https://github.com/ackintosh/sdk-rust.git", rev = "e5fa2ca77d43047536bd215e6ee6e813face81c8" }
 tokio = { version = "1.19.2", features = ["macros"] }
 tokio-stream = "0.1.9"
 tracing = "0.1.33"

@@ -7,7 +7,7 @@ set -Eeuo pipefail
 for ((i=1;i<=30;i++)); 
 do
   testground run single \
-   --plan=test-plan-discv5 \
+   --plan=discv5-testground \
    --testcase=find-node \
    --builder=docker:generic \
    --runner=local:docker \

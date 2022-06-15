@@ -1,6 +1,6 @@
 # Testground test plans for discv5
 
-[![CI](https://github.com/ackintosh/test-plan-discv5/actions/workflows/ci.yml/badge.svg)](https://github.com/ackintosh/test-plan-discv5/actions/workflows/ci.yml)
+[![CI](https://github.com/ackintosh/discv5-testground/actions/workflows/ci.yml/badge.svg)](https://github.com/ackintosh/discv5-testground/actions/workflows/ci.yml)
 
 This repository contains [Testground](https://github.com/testground/testground) test plans for [discv5](https://github.com/sigp/discv5).
 
@@ -8,12 +8,12 @@ This repository contains [Testground](https://github.com/testground/testground) 
 
 ```shell
 # Import the test plan
-$ git clone https://github.com/ackintosh/test-plan-discv5.git
-$ testground plan import --from ./test-plan-discv5
+$ git clone https://github.com/ackintosh/discv5-testground.git
+$ testground plan import --from ./discv5-testground
 
 # Run the test plan
 $ testground run single \
-    --plan=test-plan-discv5 \
+    --plan=discv5-testground \
     --testcase=find-node \
     --builder=docker:generic \
     --runner=local:docker \
@@ -28,7 +28,7 @@ $ testground run single \
 ### testcase: find-node
 
 - Star topology
-  - ![star-topology](https://raw.githubusercontent.com/ackintosh/test-plan-discv5/b2d775a1c78ce8c76cf3e7f64eb52acee813b722/diagrams/find_nodes-star_topology.png)
+  - ![star-topology](https://raw.githubusercontent.com/ackintosh/discv5-testground/b2d775a1c78ce8c76cf3e7f64eb52acee813b722/diagrams/find_nodes-star_topology.png)
   - Bootstrap node knows all the nodes in the test.
   - Other nodes knows only Bootstrap node.
 - Narrative
@@ -47,7 +47,7 @@ Open Grafana (localhost:3000) and run the following query.
 select
   *
 from
-  "test-plan-discv5_find-node_{run_id}"
+  "discv5-testground_find-node_{run_id}"
 group by
   instance_seq
 ```

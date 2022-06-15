@@ -1,9 +1,8 @@
 use chrono::Local;
 use discv5::enr::{CombinedKey, Enr, EnrBuilder, NodeId};
 use discv5::{Discv5, Discv5Config, Key};
-use ipnetwork::IpNetwork;
 use serde::{Deserialize, Serialize};
-use std::net::{IpAddr, SocketAddr};
+use std::net::SocketAddr;
 use testground::client::Client;
 use testground::network_conf::{
     FilterAction, LinkShape, NetworkConfiguration, RoutingPolicyType, DEAFULT_DATA_NETWORK,
@@ -77,7 +76,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // ////////////////////////
     let enr_key = CombinedKey::generate_secp256k1();
     let enr = EnrBuilder::new("v4")
-        .ip(get_subnet_addr(&run_parameters.test_subnet)?)
+        .ip(run_parameters
+            .data_network_ip()?
+            .expect("IP address for the data network"))
         .udp4(9000)
         .build(&enr_key)
         .expect("Construct an Enr");
@@ -88,7 +89,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // //////////////////////////////////////////////////////////////
     // Start Discovery v5 server
     // //////////////////////////////////////////////////////////////
-    // SEE: https://github.com/ackintosh/test-plan-discv5/pull/13#issuecomment-1120430861
+    // SEE: https://github.com/ackintosh/discv5-testground/pull/13#issuecomment-1120430861
     let mut discv5 = Discv5::new(enr, enr_key, Discv5Config::default())?;
     discv5
         .start("0.0.0.0:9000".parse::<SocketAddr>()?)
@@ -219,7 +220,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             let write_query = WriteQuery::new(
                 Local::now().into(),
                 format!(
-                    "test-plan-discv5_{}_{}",
+                    "discv5-testground_{}_{}",
                     run_parameters.test_case, run_parameters.test_run
                 ),
             )
@@ -295,17 +296,6 @@ async fn get_instance_seq(
             run_parameters.test_run.clone()
         ))
         .await
-}
-
-fn get_subnet_addr(subnet: &IpNetwork) -> Result<IpAddr, std::io::Error> {
-    for interface in if_addrs::get_if_addrs()? {
-        let ip = interface.addr.ip();
-        if subnet.contains(ip) {
-            return Ok(ip);
-        }
-    }
-
-    panic!("No network interface found."); // TODO: error handling
 }
 
 async fn collect_instance_information(
