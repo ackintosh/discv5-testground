@@ -88,7 +88,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // //////////////////////////////////////////////////////////////
     // Start Discovery v5 server
     // //////////////////////////////////////////////////////////////
-    // SEE: https://github.com/ackintosh/test-plan-discv5/pull/13#issuecomment-1120430861
+    // SEE: https://github.com/ackintosh/discv5-testground/pull/13#issuecomment-1120430861
     let mut discv5 = Discv5::new(enr, enr_key, Discv5Config::default())?;
     discv5
         .start("0.0.0.0:9000".parse::<SocketAddr>()?)
@@ -219,7 +219,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             let write_query = WriteQuery::new(
                 Local::now().into(),
                 format!(
-                    "test-plan-discv5_{}_{}",
+                    "discv5-testground_{}_{}",
                     run_parameters.test_case, run_parameters.test_run
                 ),
             )

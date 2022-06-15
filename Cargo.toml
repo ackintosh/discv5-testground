@@ -1,12 +1,12 @@
 [package]
-name = "test-plan-discv5"
+name = "discv5-testground"
 version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [[bin]]
-name = "test-plan-discv5"
+name = "discv5-testground"
 path = "src/main.rs"
 
 [dependencies]

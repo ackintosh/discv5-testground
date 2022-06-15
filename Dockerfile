@@ -16,8 +16,8 @@ COPY . .
 RUN cd plan && cargo install --path .
 
 FROM debian:bullseye-slim
-COPY --from=builder /usr/local/cargo/bin/test-plan-discv5 /usr/local/bin/test-plan-discv5
+COPY --from=builder /usr/local/cargo/bin/discv5-testground /usr/local/bin/discv5-testground
 
 ENV RUST_LOG=trace
 
-ENTRYPOINT ["test-plan-discv5"]
+ENTRYPOINT ["discv5-testground"]

@@ -63,7 +63,7 @@ jobs:
       - name: Checkout sources
         uses: actions/checkout@v2
         with:
-          path: test-plan-discv5
+          path: discv5-testground
 
       - name: Checkout testground
         uses: actions/checkout@v2
@@ -88,20 +88,20 @@ jobs:
         run: testground healthcheck --runner local:docker --fix
 
       - name: Wait until InfluxDB ready
-        run: test-plan-discv5/.github/wait_until_influxdb_ready.sh
+        run: discv5-testground/.github/wait_until_influxdb_ready.sh
 
       # ########################################
       # Run find-node test plan
       # ########################################
-      - name: Import test plans from test-plan-discv5
-        run: testground plan import --from test-plan-discv5
+      - name: Import test plans from discv5-testground
+        run: testground plan import --from discv5-testground
 
-      - name: Run test-plan-discv5:find-node
+      - name: Run discv5-testground:find-node
         # `--instances` option is set to 16 because in the sigp/discv5 implementation, the maximum number of nodes in a bucket is set to 16.
         # If the `--instances` option is set to over 16, `Table full` error could occur on bootstrap node.
         run: |
           testground run single \
-            --plan=test-plan-discv5 \
+            --plan=discv5-testground \
             --testcase=find-node \
             --builder=docker:generic \
             --runner=local:docker \

@@ -1,4 +1,4 @@
-name = "test-plan-discv5"
+name = "discv5-testground"
 
 [defaults]
 builder = "docker:generic"
