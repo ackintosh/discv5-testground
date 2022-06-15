@@ -5,7 +5,7 @@ WORKDIR /usr/src/test-plan
 # See https://blog.mgattozzi.dev/caching-rust-docker-builds/
 # And https://github.com/rust-lang/cargo/issues/2644
 RUN mkdir -p ./plan/src/
-COPY ./plan/dummy-for-build.rs ./plan/src/main.rs
+RUN echo "fn main() {}" > ./plan/src/main.rs
 COPY ./plan/Cargo.lock ./plan/
 COPY ./plan/Cargo.toml ./plan/
 RUN cd ./plan/ && cargo build --release
