@@ -77,7 +77,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // ////////////////////////
     let enr_key = CombinedKey::generate_secp256k1();
     let enr = EnrBuilder::new("v4")
-        .ip(get_subnet_addr(&run_parameters.test_subnet)?)
+        .ip(run_parameters
+            .data_network_ip()?
+            .expect("IP address for the data network"))
         .udp4(9000)
         .build(&enr_key)
         .expect("Construct an Enr");
@@ -295,17 +297,6 @@ async fn get_instance_seq(
             run_parameters.test_run.clone()
         ))
         .await
-}
-
-fn get_subnet_addr(subnet: &IpNetwork) -> Result<IpAddr, std::io::Error> {
-    for interface in if_addrs::get_if_addrs()? {
-        let ip = interface.addr.ip();
-        if subnet.contains(ip) {
-            return Ok(ip);
-        }
-    }
-
-    panic!("No network interface found."); // TODO: error handling
 }
 
 async fn collect_instance_information(
