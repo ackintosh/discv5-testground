@@ -1519,11 +1519,12 @@ dependencies = [
 
 [[package]]
 name = "testground"
-version = "0.2.0"
-source = "git+https://github.com/ackintosh/sdk-rust.git?rev=8218ca37b24907ba15cb748c3029dfdb3eab2709#8218ca37b24907ba15cb748c3029dfdb3eab2709"
+version = "0.3.0"
+source = "git+https://github.com/ackintosh/sdk-rust.git?rev=e5fa2ca77d43047536bd215e6ee6e813face81c8#e5fa2ca77d43047536bd215e6ee6e813face81c8"
 dependencies = [
  "clap",
  "futures",
+ "if-addrs",
  "influxdb",
  "ipnetwork",
  "log",
