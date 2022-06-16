@@ -1,4 +1,4 @@
-use crate::{collect_instance_information, InstanceInfo};
+use crate::{collect_instance_info, InstanceInfo};
 use chrono::Local;
 use discv5::enr::{CombinedKey, EnrBuilder, NodeId};
 use discv5::{Discv5, Discv5Config, Key};
@@ -51,13 +51,12 @@ pub(super) async fn find_node(
     });
 
     // //////////////////////////////////////////////////////////////
-    // Collect information of all instances within the test
+    // Collect information of all participants in the test case
     // //////////////////////////////////////////////////////////////
-    let instance_info = InstanceInfo::new(&client, &run_parameters, discv5.local_enr()).await?;
+    let instance_info = InstanceInfo::new(&client, discv5.local_enr()).await?;
     debug!("instance_info: {:?}", instance_info);
 
-    let other_instances =
-        collect_instance_information(&client, &run_parameters, &instance_info).await?;
+    let other_instances = collect_instance_info(&client, &run_parameters, &instance_info).await?;
     debug!("other_instances: {:?}", other_instances);
 
     client

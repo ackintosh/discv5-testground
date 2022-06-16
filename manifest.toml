@@ -18,8 +18,8 @@ instances = { min = 3, max = 100, default = 3 }
   latency = { type = "int", desc = "latency between peers", unit = "ms", default = 100 }
 
 [[testcases]]
-name = "eclipse-attack-monopolizing-connections"
-instances = { min = 3, max = 100, default = 3 }
+name = "eclipse-attack-table-poisoning"
+instances = { min = 20, max = 20, default = 20 }
 
   [testcases.params]
   latency = { type = "int", desc = "latency between peers", unit = "ms", default = 100 }

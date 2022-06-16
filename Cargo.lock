@@ -351,6 +351,7 @@ dependencies = [
  "discv5",
  "if-addrs",
  "ipnetwork",
+ "rand_xorshift",
  "serde",
  "serde_json",
  "testground",
@@ -1208,6 +1209,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "rand_xorshift"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d25bf25ec5ae4a3f1b92f929810509a2f53d7dca2f50b794ff57e3face536c8f"
+dependencies = [
+ "rand_core 0.6.3",
+]
+
+[[package]]
 name = "redox_syscall"
 version = "0.2.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1520,7 +1530,8 @@ checksum = "55937e1799185b12863d447f42597ed69d9928686b8d88a1df17376a097d8369"
 [[package]]
 name = "testground"
 version = "0.3.0"
-source = "git+https://github.com/ackintosh/sdk-rust.git?rev=e5fa2ca77d43047536bd215e6ee6e813face81c8#e5fa2ca77d43047536bd215e6ee6e813face81c8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6c10087a0cd54d83f28b610eb9525c4ce296581f5a4d6ce645b8d2f632af7ec4"
 dependencies = [
  "clap",
  "futures",

@@ -1,0 +1,32 @@
+[metadata]
+  name = "eclipse-attack-table-poisoning"
+  author = "Akihito Nakano"
+
+[global]
+  plan = "discv5-testground"
+  case = "eclipse-attack-table-poisoning"
+  total_instances = 20
+  builder = "docker:generic"
+  runner = "local:docker"
+  disable_metrics = false
+
+[[groups]]
+  id = "victim"
+  [groups.instances]
+  count = 1
+  [groups.run]
+    [groups.run.test_params]
+
+[[groups]]
+  id = "honest"
+  [groups.instances]
+    count = 1
+  [groups.run]
+    [groups.run.test_params]
+
+[[groups]]
+  id = "attackers"
+  [groups.instances]
+    count = 18
+  [groups.run]
+    [groups.run.test_params]
