@@ -1,7 +1,8 @@
-use crate::{collect_instance_info, InstanceInfo};
+use crate::{get_instance_seq, publish_and_collect};
 use chrono::Local;
 use discv5::enr::{CombinedKey, EnrBuilder, NodeId};
-use discv5::{Discv5, Discv5Config, Key};
+use discv5::{Discv5, Discv5Config, Enr, Key};
+use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
 use testground::client::Client;
 use testground::{RunParameters, WriteQuery};
@@ -12,6 +13,29 @@ const STATE_COMPLETED_TO_COLLECT_INSTANCE_INFORMATION: &str =
     "state_completed_to_collect_instance_information";
 const STATE_COMPLETED_TO_BUILD_TOPOLOGY: &str = "state_completed_to_build_topology";
 const STATE_COMPLETED_TO_RUN_FIND_NODE_QUERY: &str = "state_completed_to_run_find_node_query";
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+struct InstanceInfo {
+    // The sequence number of this test instance within the test.
+    seq: u64,
+    enr: Enr,
+    is_bootstrap_node: bool,
+}
+
+impl InstanceInfo {
+    async fn new(client: &Client, enr: Enr) -> Result<Self, Box<dyn std::error::Error>> {
+        let seq = get_instance_seq(client).await?;
+
+        // NOTE: For now, #1 is bootstrap node.
+        let is_bootstrap_node = seq == 1;
+
+        Ok(InstanceInfo {
+            seq,
+            enr,
+            is_bootstrap_node,
+        })
+    }
+}
 
 pub(super) async fn find_node(
     client: Client,
@@ -56,7 +80,7 @@ pub(super) async fn find_node(
     let instance_info = InstanceInfo::new(&client, discv5.local_enr()).await?;
     debug!("instance_info: {:?}", instance_info);
 
-    let other_instances = collect_instance_info(&client, &run_parameters, &instance_info).await?;
+    let other_instances = collect_other_instance_info(&client, &run_parameters, &instance_info).await?;
     debug!("other_instances: {:?}", other_instances);
 
     client
@@ -200,4 +224,18 @@ pub(super) async fn find_node(
     }
 
     Ok(())
+}
+
+async fn collect_other_instance_info(
+    client: &Client,
+    run_parameters: &RunParameters,
+    instance_info: &InstanceInfo,
+) -> Result<Vec<InstanceInfo>, Box<dyn std::error::Error>> {
+    let mut info = publish_and_collect(client, run_parameters, instance_info.clone()).await?;
+
+    if let Some(pos) = info.iter().position(|i| i.seq == instance_info.seq) {
+        info.remove(pos);
+    }
+
+    Ok(info)
 }

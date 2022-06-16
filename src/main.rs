@@ -1,9 +1,8 @@
 mod eclipse;
 mod find_node;
 
-use discv5::enr::{CombinedKey, Enr};
 use serde::de::DeserializeOwned;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use testground::client::Client;
 use testground::network_conf::{
     FilterAction, LinkShape, NetworkConfiguration, RoutingPolicyType, DEAFULT_DATA_NETWORK,
@@ -81,32 +80,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
-struct InstanceInfo {
-    // The sequence number of this test instance within the test.
-    seq: u64,
-    enr: Enr<CombinedKey>,
-    is_bootstrap_node: bool,
-}
-
-impl InstanceInfo {
-    async fn new(
-        client: &Client,
-        enr: Enr<CombinedKey>,
-    ) -> Result<Self, Box<dyn std::error::Error>> {
-        let seq = get_instance_seq(client).await?;
-
-        // NOTE: For now, #1 is bootstrap node.
-        let is_bootstrap_node = seq == 1;
-
-        Ok(InstanceInfo {
-            seq,
-            enr,
-            is_bootstrap_node,
-        })
-    }
-}
-
 // Returns the sequence number of this test instance within the test.
 async fn get_instance_seq(client: &Client) -> Result<u64, testground::errors::Error> {
     client.signal("get_instance_seq").await
@@ -117,20 +90,6 @@ async fn get_group_seq(
     group_id: &String,
 ) -> Result<u64, testground::errors::Error> {
     client.signal(format!("get_group_seq_{}", group_id)).await
-}
-
-async fn collect_instance_info(
-    client: &Client,
-    run_parameters: &RunParameters,
-    instance_info: &InstanceInfo,
-) -> Result<Vec<InstanceInfo>, Box<dyn std::error::Error>> {
-    let mut info = publish_and_collect(client, run_parameters, instance_info.clone()).await?;
-
-    if let Some(pos) = info.iter().position(|i| i.seq == instance_info.seq) {
-        info.remove(pos);
-    }
-
-    Ok(info)
 }
 
 async fn publish_and_collect<T: Serialize + DeserializeOwned>(
