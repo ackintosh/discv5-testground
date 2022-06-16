@@ -80,7 +80,8 @@ pub(super) async fn find_node(
     let instance_info = InstanceInfo::new(&client, discv5.local_enr()).await?;
     debug!("instance_info: {:?}", instance_info);
 
-    let other_instances = collect_other_instance_info(&client, &run_parameters, &instance_info).await?;
+    let other_instances =
+        collect_other_instance_info(&client, &run_parameters, &instance_info).await?;
     debug!("other_instances: {:?}", other_instances);
 
     client

@@ -120,18 +120,21 @@ impl TablePoisoning {
     }
 
     fn generate_deterministic_keypair(group_seq: u64, role: &Role) -> CombinedKey {
-        // Generate 20 key pairs. Distances between the first key pair and all
-        // other ones are the same. So in the node with the first key pair, node
-        // ids given from the other ones will be inserted into the same bucket.
+        // Generate 20 key pairs. Distances between the first key pair and all other ones are the
+        // same. So in the node with the first key pair, node ids given from the other ones will be
+        // inserted into the same bucket.
         //
-        // The 20 key pairs generated are assigned to participants according to
-        // its role as follows:
+        // The 20 key pairs generated are assigned to participants according to its role as follows:
         // - 0: victim
         // - 1: honest
         // - 2: attacker
         // - 3: attacker
         // ...
         // - 19: attacker
+        //
+        // The `122488` seed is a pre-computed one for this function. See `find_seed_same_bucket()`
+        // in https://github.com/sigp/discv5/blob/master/src/discv5/test.rs for more details of the
+        // pre-computing.
         let mut keypairs = generate_deterministic_keypair(20, 122488);
 
         let index = match role {
@@ -171,6 +174,7 @@ impl TablePoisoning {
         honest: &InstanceInfo,
         attackers: &Vec<InstanceInfo>,
     ) -> Result<(), Box<dyn std::error::Error>> {
+        // Wait until the attacker has done its attack.
         client
             .barrier(
                 STATE_ATTACKERS_SENT_QUERY,
@@ -178,26 +182,29 @@ impl TablePoisoning {
             )
             .await?;
 
-        let result = {
-            for (i, bucket) in discv5.kbuckets().buckets_iter().enumerate() {
-                client.record_message(format!(
-                    "[KBucket] index:{}, num_entries:{}, num_connected:{}, num_disconnected:{}",
-                    i,
-                    bucket.num_entries(),
-                    bucket.num_connected(),
-                    bucket.num_disconnected()
-                ));
-            }
+        // For debugging, dump the routing table statistics.
+        for (i, bucket) in discv5.kbuckets().buckets_iter().enumerate() {
+            client.record_message(format!(
+                "[KBucket] index:{}, num_entries:{}, num_connected:{}, num_disconnected:{}",
+                i,
+                bucket.num_entries(),
+                bucket.num_connected(),
+                bucket.num_disconnected()
+            ));
+        }
 
-            discv5.add_enr(honest.enr.clone())
-        };
+        // If the victim is vulnerable to the eclipse attack, this will result in `Table full`
+        // error because the bucket is full of the attacker's node id.
+        let result = discv5.add_enr(honest.enr.clone());
 
         client
             .signal_and_wait(STATE_DONE, self.run_parameters.test_instance_count)
             .await?;
 
         if let Err(msg) = result {
-            client.record_failure(msg).await?;
+            client
+                .record_failure(format!("Failed to add the honest node's ENR: {}", msg))
+                .await?;
         } else {
             client.record_success().await?;
         }
@@ -205,6 +212,7 @@ impl TablePoisoning {
     }
 
     async fn play_honest(&self, client: Client) -> Result<(), Box<dyn std::error::Error>> {
+        // Nothing to do, just wait until the simulation has been done.
         client
             .signal_and_wait(STATE_DONE, self.run_parameters.test_instance_count)
             .await?;
@@ -219,13 +227,19 @@ impl TablePoisoning {
         client: Client,
         victim: &InstanceInfo,
     ) -> Result<(), Box<dyn std::error::Error>> {
+        // The victim's ENR is added to the attacker's routing table prior to sending a query. So
+        // the FINDNODE query will be sent to the victim, and then, if the victim is vulnerable
+        // to the eclipse attack, the attacker's ENR will be added to the victim's routing table
+        // because of the handshake.
         discv5.add_enr(victim.enr.clone())?;
-
         if let Err(e) = discv5.find_node(NodeId::random()).await {
             client.record_message(format!("Failed to run query: {}", e));
         }
 
+        // Inform that sending query has been done.
         client.signal(STATE_ATTACKERS_SENT_QUERY).await?;
+
+        // Wait until checking on the victim has been done.
         client
             .signal_and_wait(STATE_DONE, self.run_parameters.test_instance_count)
             .await?;
