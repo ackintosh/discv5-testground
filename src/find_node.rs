@@ -59,7 +59,6 @@ pub(super) async fn find_node(
     // //////////////////////////////////////////////////////////////
     // Start Discovery v5 server
     // //////////////////////////////////////////////////////////////
-    // SEE: https://github.com/ackintosh/discv5-testground/pull/13#issuecomment-1120430861
     let mut discv5 = Discv5::new(enr, enr_key, Discv5Config::default())?;
     discv5
         .start("0.0.0.0:9000".parse::<SocketAddr>()?)
