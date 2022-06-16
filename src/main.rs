@@ -68,12 +68,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Run test case
     // //////////////////////////////////////////////////////////////
     match run_parameters.test_case.clone().as_str() {
+        "find-node" => find_node::find_node(client.clone(), run_parameters.clone()).await?,
         "eclipse-attack-table-poisoning" => {
             eclipse::TablePoisoning::new(run_parameters.clone())
                 .run(client.clone())
                 .await?
         }
-        "find-node" => find_node::find_node(client.clone(), run_parameters.clone()).await?,
         _ => unreachable!(),
     };
 
