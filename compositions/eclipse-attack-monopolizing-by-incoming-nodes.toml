@@ -1,35 +1,35 @@
 [metadata]
-  name = "eclipse-attack-monopolizing-by-incoming-nodes"
-  author = "Akihito Nakano"
+name = "eclipse-attack-monopolizing-by-incoming-nodes"
+author = "Akihito Nakano"
 
 [global]
-  plan = "discv5-testground"
-  case = "eclipse-attack-monopolizing-by-incoming-nodes"
-  total_instances = 20
-  builder = "docker:generic"
-  runner = "local:docker"
-  disable_metrics = false
+plan = "discv5-testground"
+case = "eclipse-attack-monopolizing-by-incoming-nodes"
+total_instances = 20
+builder = "docker:generic"
+runner = "local:docker"
+disable_metrics = false
 
 [[groups]]
-  id = "victim"
+id = "victim"
   [groups.instances]
-    count = 1
+  count = 1
   [groups.run]
     [groups.run.test_params]
-      # In order to prevent the attack, you can enable this parameter. This parameter sets a maximum limit to the number
-      # of incoming nodes per bucket.
-      # incoming_bucket_limit = "8"
+    # In order to prevent the attack, you can enable this parameter. This parameter sets a maximum limit to the number
+    # of incoming nodes per bucket.
+    # incoming_bucket_limit = "8"
 
 [[groups]]
-  id = "honest"
+id = "honest"
   [groups.instances]
-    count = 1
+  count = 1
   [groups.run]
     [groups.run.test_params]
 
 [[groups]]
-  id = "attackers"
+id = "attackers"
   [groups.instances]
-    count = 18
+  count = 18
   [groups.run]
     [groups.run.test_params]
