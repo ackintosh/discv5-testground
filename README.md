@@ -33,17 +33,14 @@ Initially, the bootstrap node's routing table contains all the nodes' ENR in the
 
 ![star-topology](https://raw.githubusercontent.com/ackintosh/discv5-testground/b2d775a1c78ce8c76cf3e7f64eb52acee813b722/diagrams/find_nodes-star_topology.png)
 
-### `eclipse-attack-table-poisoning`
+### `eclipse-attack-monopolizing-by-incoming-nodes`
 
-This test case does the `ECLIPSE BY TABLE POISONING` introduced by the paper.
+In this test case, the attacker crafts a node id which will be inserted into the particular bucket in the victim's routing table. And then the attacker sends a query to the victim in order to let the victim add the attacker's node id to its routing table (particular bucket).
 
-[Low-Resource Eclipse Attacks on Ethereum’s Peer-to-Peer Network](https://eprint.iacr.org/2018/236.pdf)
-
-The number of `instances` is fixed to 20 in this test case. For more detail, see `composition-eclipse-attack-table-poisoning.toml`.
+The victim's routing table will be filled with the attacker's "incoming" entries if the victim is vulnerable to the attack.
 
 ```shell
-# Run a simulation for eclipse attack by table poisoning
-testground run composition -f composition-eclipse-attack-table-poisoning.toml --wait
+testground run composition -f compositions/eclipse-attack-monopolizing-by-incoming-nodes.toml --wait
 ```
 
 ## Metrics

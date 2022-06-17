@@ -2,7 +2,7 @@ use crate::{get_group_seq, publish_and_collect};
 use discv5::enr::k256::elliptic_curve::rand_core::RngCore;
 use discv5::enr::k256::elliptic_curve::rand_core::SeedableRng;
 use discv5::enr::{CombinedKey, EnrBuilder, NodeId};
-use discv5::{enr, Discv5, Discv5Config, Discv5ConfigBuilder, Enr};
+use discv5::{enr, Discv5, Discv5ConfigBuilder, Enr};
 use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
 use std::u64;
@@ -40,13 +40,13 @@ struct InstanceInfo {
     role: Role,
 }
 
-pub(super) struct TablePoisoning {
+pub(super) struct MonopolizingByIncomingNodes {
     run_parameters: RunParameters,
 }
 
-impl TablePoisoning {
+impl MonopolizingByIncomingNodes {
     pub(super) fn new(run_parameters: RunParameters) -> Self {
-        TablePoisoning { run_parameters }
+        MonopolizingByIncomingNodes { run_parameters }
     }
 
     pub(super) async fn run(&self, client: Client) -> Result<(), Box<dyn std::error::Error>> {

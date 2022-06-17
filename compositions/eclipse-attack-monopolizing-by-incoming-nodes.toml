@@ -1,10 +1,10 @@
 [metadata]
-  name = "eclipse-attack-table-poisoning"
+  name = "eclipse-attack-monopolizing-by-incoming-nodes"
   author = "Akihito Nakano"
 
 [global]
   plan = "discv5-testground"
-  case = "eclipse-attack-table-poisoning"
+  case = "eclipse-attack-monopolizing-by-incoming-nodes"
   total_instances = 20
   builder = "docker:generic"
   runner = "local:docker"
