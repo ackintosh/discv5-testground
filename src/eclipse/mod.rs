@@ -2,7 +2,7 @@ use crate::{get_group_seq, publish_and_collect};
 use discv5::enr::k256::elliptic_curve::rand_core::RngCore;
 use discv5::enr::k256::elliptic_curve::rand_core::SeedableRng;
 use discv5::enr::{CombinedKey, EnrBuilder, NodeId};
-use discv5::{enr, Discv5, Discv5Config, Enr};
+use discv5::{enr, Discv5, Discv5Config, Discv5ConfigBuilder, Enr};
 use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
 use std::u64;
@@ -71,7 +71,17 @@ impl TablePoisoning {
         // //////////////////////////////////////////////////////////////
         // Start Discovery v5 server
         // //////////////////////////////////////////////////////////////
-        let mut discv5 = Discv5::new(enr, enr_key, Discv5Config::default())?;
+        let discv5_config = Discv5ConfigBuilder::new()
+            .incoming_bucket_limit(
+                self.run_parameters
+                    .test_instance_params
+                    .get("incoming_bucket_limit")
+                    .expect("incoming_bucket_limit")
+                    .parse::<usize>()
+                    .expect("Valid as usize"),
+            )
+            .build();
+        let mut discv5 = Discv5::new(enr, enr_key, discv5_config)?;
         discv5
             .start("0.0.0.0:9000".parse::<SocketAddr>()?)
             .await
