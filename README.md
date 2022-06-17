@@ -21,21 +21,30 @@ $ testground run single \
     --wait
 ```
 
-## Tests
+## Test cases
 
-:construction_worker: More testcases are in progress. :construction_worker:
+### `find-node`
 
-### testcase: find-node
+In this test case, the participants construct a star topology which bootstrap node at the center, and then run the FINDNODE query. Each node run the query to test whether the node can discover all other nodes in the test case.
 
-- Star topology
-  - ![star-topology](https://raw.githubusercontent.com/ackintosh/discv5-testground/b2d775a1c78ce8c76cf3e7f64eb52acee813b722/diagrams/find_nodes-star_topology.png)
-  - Bootstrap node knows all the nodes in the test.
-  - Other nodes knows only Bootstrap node.
-- Narrative
-  - **Warm up**
-    - All nodes boot up.
-  - **Act I**
-    - Each node calls FINDNODE to find all other nodes.
+#### Star topology
+
+Initially, the bootstrap node's routing table contains all the nodes' ENR in the test, and each node's routing table contains the bootstrap node's ENR only.
+
+![star-topology](https://raw.githubusercontent.com/ackintosh/discv5-testground/b2d775a1c78ce8c76cf3e7f64eb52acee813b722/diagrams/find_nodes-star_topology.png)
+
+### `eclipse-attack-table-poisoning`
+
+This test case does the `ECLIPSE BY TABLE POISONING` introduced by the paper.
+
+[Low-Resource Eclipse Attacks on Ethereum’s Peer-to-Peer Network](https://eprint.iacr.org/2018/236.pdf)
+
+The number of `instances` is fixed to 20 in this test case. For more detail, see `composition-eclipse-attack-table-poisoning.toml`.
+
+```shell
+# Run a simulation for eclipse attack by table poisoning
+testground run composition -f composition-eclipse-attack-table-poisoning.toml --wait
+```
 
 ## Metrics
 
