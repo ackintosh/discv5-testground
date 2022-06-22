@@ -74,6 +74,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .run(client.clone())
                 .await?
         }
+        "eclipse-attack-pretending-not-to-know" => {
+            eclipse::pretending_not_to_know::PretendingNotToKnow::new(run_parameters)
+                .run(client.clone())
+                .await?
+        }
         _ => unreachable!(),
     };
 

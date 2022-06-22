@@ -1,13 +1,10 @@
-pub(super) mod pretending_not_to_know;
-
+use crate::eclipse::generate_deterministic_keypair;
 use crate::{get_group_seq, publish_and_collect};
-use discv5::enr::k256::elliptic_curve::rand_core::RngCore;
-use discv5::enr::k256::elliptic_curve::rand_core::SeedableRng;
 use discv5::enr::{CombinedKey, EnrBuilder, NodeId};
-use discv5::{enr, Discv5, Discv5ConfigBuilder, Enr};
+use discv5::{ConnectionDirection, Discv5, Discv5ConfigBuilder, Enr};
 use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
-use std::u64;
+use std::time::Duration;
 use testground::client::Client;
 use testground::RunParameters;
 use tokio::task;
@@ -18,10 +15,13 @@ const STATE_COMPLETED_TO_COLLECT_INSTANCE_INFORMATION: &str =
 const STATE_ATTACKERS_SENT_QUERY: &str = "STATE_ATTACKERS_SENT_QUERY";
 const STATE_DONE: &str = "STATE_DONE";
 
+pub(crate) struct PretendingNotToKnow {
+    run_parameters: RunParameters,
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 enum Role {
     Victim,
-    Honest,
     Attacker,
 }
 
@@ -29,7 +29,6 @@ impl From<&str> for Role {
     fn from(test_group_id: &str) -> Self {
         match test_group_id {
             "victim" => Role::Victim,
-            "honest" => Role::Honest,
             "attackers" => Role::Attacker,
             _ => unreachable!(),
         }
@@ -42,16 +41,12 @@ struct InstanceInfo {
     role: Role,
 }
 
-pub(super) struct MonopolizingByIncomingNodes {
-    run_parameters: RunParameters,
-}
-
-impl MonopolizingByIncomingNodes {
-    pub(super) fn new(run_parameters: RunParameters) -> Self {
-        MonopolizingByIncomingNodes { run_parameters }
+impl PretendingNotToKnow {
+    pub(crate) fn new(run_parameters: RunParameters) -> Self {
+        PretendingNotToKnow { run_parameters }
     }
 
-    pub(super) async fn run(&self, client: Client) -> Result<(), Box<dyn std::error::Error>> {
+    pub(crate) async fn run(&self, client: Client) -> Result<(), Box<dyn std::error::Error>> {
         // Note: The seq starts from 1.
         let group_seq = get_group_seq(&client, &self.run_parameters.test_group_id).await?;
         let role: Role = self.run_parameters.test_group_id.as_str().into();
@@ -74,14 +69,11 @@ impl MonopolizingByIncomingNodes {
         // Start Discovery v5 server
         // //////////////////////////////////////////////////////////////
         let discv5_config = Discv5ConfigBuilder::new()
-            .incoming_bucket_limit(
-                self.run_parameters
-                    .test_instance_params
-                    .get("incoming_bucket_limit")
-                    .expect("incoming_bucket_limit")
-                    .parse::<usize>()
-                    .expect("Valid as usize"),
-            )
+            .incoming_bucket_limit(8)
+            .session_timeout(match role {
+                Role::Victim => Duration::from_secs(100),
+                Role::Attacker => Duration::from_secs(0),
+            })
             .build();
         let mut discv5 = Discv5::new(enr, enr_key, discv5_config)?;
         discv5
@@ -105,8 +97,7 @@ impl MonopolizingByIncomingNodes {
             role,
         };
 
-        let (victim, honest, attackers) =
-            self.collect_instance_info(&client, &instance_info).await?;
+        let (victim, attackers) = self.collect_instance_info(&client, &instance_info).await?;
 
         client
             .signal_and_wait(
@@ -119,11 +110,7 @@ impl MonopolizingByIncomingNodes {
         // Play the role
         // //////////////////////////////////////////////////////////////
         match instance_info.role {
-            Role::Victim => {
-                self.play_victim(discv5, client, &honest, &attackers)
-                    .await?
-            }
-            Role::Honest => self.play_honest(client).await?,
+            Role::Victim => self.play_victim(discv5, client, &attackers).await?,
             Role::Attacker => self.play_attacker(discv5, client, &victim).await?,
         }
 
@@ -137,7 +124,7 @@ impl MonopolizingByIncomingNodes {
         //
         // The 20 key pairs generated are assigned to participants according to its role as follows:
         // - 0: victim
-        // - 1: honest
+        // - 1: attacker
         // - 2: attacker
         // - 3: attacker
         // ...
@@ -150,8 +137,7 @@ impl MonopolizingByIncomingNodes {
 
         let index = match role {
             Role::Victim => group_seq,
-            Role::Honest => (group_seq + 1), // Take the number of victim into account
-            Role::Attacker => (group_seq + 2), // Take the number of victim + honest into account
+            Role::Attacker => (group_seq + 1), // Take the number of victim into account
         } - 1; // The group_seq starts from 1, not from 0, so we should minus one here.
         keypairs.remove(usize::try_from(index).expect("Valid as usize"))
     }
@@ -160,32 +146,28 @@ impl MonopolizingByIncomingNodes {
         &self,
         client: &Client,
         instance_info: &InstanceInfo,
-    ) -> Result<(InstanceInfo, InstanceInfo, Vec<InstanceInfo>), Box<dyn std::error::Error>> {
+    ) -> Result<(InstanceInfo, Vec<InstanceInfo>), Box<dyn std::error::Error>> {
         let mut victim = vec![];
-        let mut honest = vec![];
         let mut attackers = vec![];
 
         for i in publish_and_collect(client, &self.run_parameters, instance_info.clone()).await? {
             match i.role {
                 Role::Victim => victim.push(i),
-                Role::Honest => honest.push(i),
                 Role::Attacker => attackers.push(i),
             }
         }
 
-        assert!(victim.len() == 1 && honest.len() == 1 && attackers.len() == 18);
+        assert!(victim.len() == 1 && attackers.len() == 19);
 
-        Ok((victim.remove(0), honest.remove(0), attackers))
+        Ok((victim.remove(0), attackers))
     }
 
     async fn play_victim(
         &self,
         discv5: Discv5,
         client: Client,
-        honest: &InstanceInfo,
         attackers: &Vec<InstanceInfo>,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        // Wait until the attacker has done its attack.
         client
             .barrier(
                 STATE_ATTACKERS_SENT_QUERY,
@@ -193,37 +175,36 @@ impl MonopolizingByIncomingNodes {
             )
             .await?;
 
-        // For debugging, dump the routing table statistics.
-        for (i, bucket) in discv5.kbuckets().buckets_iter().enumerate() {
-            client.record_message(format!(
-                "[KBucket] index:{}, num_entries:{}, num_connected:{}, num_disconnected:{}",
-                i,
-                bucket.num_entries(),
-                bucket.num_connected(),
-                bucket.num_disconnected()
-            ));
+        println!("connected peers: {}", discv5.connected_peers());
+
+        for _ in 0..100 {
+            tokio::time::sleep(Duration::from_millis(500)).await;
+            if let Err(e) = discv5.find_node(NodeId::random()).await {
+                println!("query error: {:?}", e);
+            }
+
+            for (i, bucket) in discv5.kbuckets().buckets_iter().enumerate() {
+                if bucket.num_entries() == 0 {
+                    continue;
+                }
+                assert_eq!(i, 255);
+
+                let mut incoming = 0;
+                let mut outgoing = 0;
+                for node in bucket.iter() {
+                    match node.status.direction {
+                        ConnectionDirection::Incoming => incoming += 1,
+                        ConnectionDirection::Outgoing => outgoing += 1,
+                    }
+                }
+
+                println!(
+                    "bucket index:{}: incoming:{}, outgoing:{}",
+                    i, incoming, outgoing
+                );
+            }
         }
 
-        // If the victim is vulnerable to the eclipse attack, this will result in `Table full`
-        // error because the bucket is full of the attacker's node id.
-        let result = discv5.add_enr(honest.enr.clone());
-
-        client
-            .signal_and_wait(STATE_DONE, self.run_parameters.test_instance_count)
-            .await?;
-
-        if let Err(msg) = result {
-            client
-                .record_failure(format!("Failed to add the honest node's ENR: {}", msg))
-                .await?;
-        } else {
-            client.record_success().await?;
-        }
-        Ok(())
-    }
-
-    async fn play_honest(&self, client: Client) -> Result<(), Box<dyn std::error::Error>> {
-        // Nothing to do, just wait until the simulation has been done.
         client
             .signal_and_wait(STATE_DONE, self.run_parameters.test_instance_count)
             .await?;
@@ -238,10 +219,6 @@ impl MonopolizingByIncomingNodes {
         client: Client,
         victim: &InstanceInfo,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        // The victim's ENR is added to the attacker's routing table prior to sending a query. So
-        // the FINDNODE query will be sent to the victim, and then, if the victim is vulnerable
-        // to the eclipse attack, the attacker's ENR will be added to the victim's routing table
-        // because of the handshake.
         discv5.add_enr(victim.enr.clone())?;
         if let Err(e) = discv5.find_node(NodeId::random()).await {
             client.record_message(format!("Failed to run query: {}", e));
@@ -258,26 +235,4 @@ impl MonopolizingByIncomingNodes {
         client.record_success().await?;
         Ok(())
     }
-}
-
-// This function is copied from https://github.com/sigp/discv5/blob/master/src/discv5/test.rs
-// Generate `n` deterministic keypairs from a given seed.
-fn generate_deterministic_keypair(n: usize, seed: u64) -> Vec<CombinedKey> {
-    let mut keypairs = Vec::new();
-    for i in 0..n {
-        let sk = {
-            let rng = &mut rand_xorshift::XorShiftRng::seed_from_u64(seed + i as u64);
-            let mut b = [0; 32];
-            loop {
-                // until a value is given within the curve order
-                rng.fill_bytes(&mut b);
-                if let Ok(k) = enr::k256::ecdsa::SigningKey::from_bytes(&b) {
-                    break k;
-                }
-            }
-        };
-        let kp = CombinedKey::from(sk);
-        keypairs.push(kp);
-    }
-    keypairs
 }

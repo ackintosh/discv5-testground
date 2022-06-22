@@ -30,3 +30,14 @@ instances = { min = 20, max = 20, default = 20 }
 
   # Params for the `victim` group
   incoming_bucket_limit = { type = "int", desc = "A maximum limit to the number of incoming nodes per bucket.", default = 16 }
+
+# Eclipse attack by pretending not to know the victim node
+[[testcases]]
+name = "eclipse-attack-pretending-not-to-know"
+# The number of `instances` is fixed to 20 in this test case. For more detail,
+# see `compositions/eclipse-attack-pretending-not-to-know.toml`.
+instances = { min = 20, max = 20, default = 20 }
+
+  [testcases.params]
+  latency = { type = "int", desc = "Latency between peers.", unit = "ms", default = 100 }
+
