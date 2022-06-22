@@ -41,17 +41,19 @@ The victim's routing table will be filled with the attacker's "incoming" entries
 
 #### Run the test case
 
+The test case should result in success. The attackers fail to fill the victim's routing table with their node id because we limit the number of incoming nodes per bucket. See: [`eclipse-attack-monopolizing-by-incoming-nodes.toml`](https://github.com/ackintosh/discv5-testground/tree/main/compositions/eclipse-attack-monopolizing-by-incoming-nodes.toml).
+
 ```shell
-# A 'Table full' error should occur due to no limit for incoming nodes in this configuration.
 testground run composition -f compositions/eclipse-attack-monopolizing-by-incoming-nodes.toml --wait
 ```
 
-In order to enable the limit for incoming node, update `eclipse-attack-monopolizing-by-incoming-nodes.toml` as follows:
+
+If you comment out this parameter as follows and run again, the victim node emits "Table full" error and the test case results in failure, since the victim's routing bucket is full of the "incoming" attacker node ids.
 
 ```diff
     [groups.run.test_params]
--    # incoming_bucket_limit = "8"
-+    incoming_bucket_limit = "8"
+-    incoming_bucket_limit = "8"
++    # incoming_bucket_limit = "8"
 ```
 
 ## Metrics
