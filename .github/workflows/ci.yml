@@ -53,7 +53,7 @@ jobs:
           command: clippy
           args: -- -D warnings
 
-  testground:
+  find-node:
     name: Testground runs
     runs-on: ubuntu-latest
     defaults:
@@ -96,7 +96,7 @@ jobs:
       - name: Import test plans from discv5-testground
         run: testground plan import --from discv5-testground
 
-      - name: Run discv5-testground:find-node
+      - name: Run find-node
         # `--instances` option is set to 16 because in the sigp/discv5 implementation, the maximum number of nodes in a bucket is set to 16.
         # If the `--instances` option is set to over 16, `Table full` error could occur on bootstrap node.
         run: |
@@ -106,4 +106,53 @@ jobs:
             --builder=docker:generic \
             --runner=local:docker \
             --instances=16 \
+            --wait
+
+  eclipse-attack-monopolizing-by-incoming-nodes:
+    name: Run `eclipse-attack-monopolizing-by-incoming-nodes`
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v2
+        with:
+          path: discv5-testground
+
+      - name: Checkout testground
+        uses: actions/checkout@v2
+        with:
+          path: testground
+          repository: testground/testground
+
+      - name: Setup Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: '>=1.18.0'
+
+      - name: Install testground
+        run: make install
+        working-directory: testground
+
+      - name: Run testground daemon
+        run: testground daemon &
+
+      # In order to ensure that the containers are ready at running `find-node` plan later, run the healthcheck subcommand with the --fix option.
+      - name: Run testground healthcheck
+        run: testground healthcheck --runner local:docker --fix
+
+      - name: Wait until InfluxDB ready
+        run: discv5-testground/.github/wait_until_influxdb_ready.sh
+
+      # ########################################
+      # Run find-node test plan
+      # ########################################
+      - name: Import test plans from discv5-testground
+        run: testground plan import --from discv5-testground
+
+      - name: Run eclipse-attack-monopolizing-by-incoming-nodes
+        run: |
+          testground run composition \
+            -f discv5-testground/compositions/eclipse-attack-monopolizing-by-incoming-nodes.toml \
             --wait
