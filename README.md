@@ -27,6 +27,18 @@ $ testground run single \
 
 In this test case, the participants construct a star topology which bootstrap node at the center, and then run the FINDNODE query. Each node run the query to test whether the node can discover all other nodes in the test case.
 
+#### Run the test case
+
+```shell
+testground run single \
+    --plan=discv5-testground \
+    --testcase=find-node \
+    --builder=docker:generic \
+    --runner=local:docker \
+    --instances=5 \
+    --wait
+```
+
 #### Star topology
 
 Initially, the bootstrap node's routing table contains all the nodes' ENR in the test, and each node's routing table contains the bootstrap node's ENR only.
@@ -44,7 +56,9 @@ The victim's routing table will be filled with the attacker's "incoming" entries
 The test case should result in success. The attackers fail to fill the victim's routing table with their node id because we limit the number of incoming nodes per bucket. See: [`eclipse-attack-monopolizing-by-incoming-nodes.toml`](https://github.com/ackintosh/discv5-testground/tree/main/compositions/eclipse-attack-monopolizing-by-incoming-nodes.toml).
 
 ```shell
-testground run composition -f compositions/eclipse-attack-monopolizing-by-incoming-nodes.toml --wait
+testground run composition \
+    -f compositions/eclipse-attack-monopolizing-by-incoming-nodes.toml \
+    --wait
 ```
 
 
