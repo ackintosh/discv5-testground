@@ -19,7 +19,8 @@ ipnetwork = "0.19.0"
 rand_xorshift = "0.3.0"
 serde = "1.0.137"
 serde_json = "1.0.81"
-testground = "0.3.0"
+# TODO: update testground once the next version has been released.
+testground = { git = "https://github.com/testground/sdk-rust.git", rev = "0a1d439f5ca63daf8c1d8d99e5ab1752c6351a25" }
 tokio = { version = "1.19.2", features = ["macros"] }
 tokio-stream = "0.1.9"
 tracing = "0.1.33"

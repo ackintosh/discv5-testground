@@ -1,11 +1,11 @@
-use crate::{get_instance_seq, publish_and_collect};
+use crate::publish_and_collect;
 use chrono::Local;
 use discv5::enr::{CombinedKey, EnrBuilder, NodeId};
 use discv5::{Discv5, Discv5Config, Enr, Key};
 use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
 use testground::client::Client;
-use testground::{RunParameters, WriteQuery};
+use testground::WriteQuery;
 use tokio::task;
 use tracing::{debug, error, info};
 
@@ -24,7 +24,7 @@ struct InstanceInfo {
 
 impl InstanceInfo {
     async fn new(client: &Client, enr: Enr) -> Result<Self, Box<dyn std::error::Error>> {
-        let seq = get_instance_seq(client).await?;
+        let seq = client.global_seq();
 
         // NOTE: For now, #1 is bootstrap node.
         let is_bootstrap_node = seq == 1;
@@ -37,10 +37,8 @@ impl InstanceInfo {
     }
 }
 
-pub(super) async fn find_node(
-    client: Client,
-    run_parameters: RunParameters,
-) -> Result<(), Box<dyn std::error::Error>> {
+pub(super) async fn find_node(client: Client) -> Result<(), Box<dyn std::error::Error>> {
+    let run_parameters = client.run_parameters();
     // ////////////////////////
     // Construct a local Enr
     // ////////////////////////
@@ -79,8 +77,7 @@ pub(super) async fn find_node(
     let instance_info = InstanceInfo::new(&client, discv5.local_enr()).await?;
     debug!("instance_info: {:?}", instance_info);
 
-    let other_instances =
-        collect_other_instance_info(&client, &run_parameters, &instance_info).await?;
+    let other_instances = collect_other_instance_info(&client, &instance_info).await?;
     debug!("other_instances: {:?}", other_instances);
 
     client
@@ -228,10 +225,9 @@ pub(super) async fn find_node(
 
 async fn collect_other_instance_info(
     client: &Client,
-    run_parameters: &RunParameters,
     instance_info: &InstanceInfo,
 ) -> Result<Vec<InstanceInfo>, Box<dyn std::error::Error>> {
-    let mut info = publish_and_collect(client, run_parameters, instance_info.clone()).await?;
+    let mut info = publish_and_collect(client, instance_info.clone()).await?;
 
     if let Some(pos) = info.iter().position(|i| i.seq == instance_info.seq) {
         info.remove(pos);

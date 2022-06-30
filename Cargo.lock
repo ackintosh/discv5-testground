@@ -1529,9 +1529,8 @@ checksum = "55937e1799185b12863d447f42597ed69d9928686b8d88a1df17376a097d8369"
 
 [[package]]
 name = "testground"
-version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6c10087a0cd54d83f28b610eb9525c4ce296581f5a4d6ce645b8d2f632af7ec4"
+version = "0.4.0"
+source = "git+https://github.com/testground/sdk-rust.git?rev=0a1d439f5ca63daf8c1d8d99e5ab1752c6351a25#0a1d439f5ca63daf8c1d8d99e5ab1752c6351a25"
 dependencies = [
  "clap",
  "futures",

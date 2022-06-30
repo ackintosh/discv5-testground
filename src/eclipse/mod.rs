@@ -1,4 +1,4 @@
-use crate::{get_group_seq, publish_and_collect};
+use crate::publish_and_collect;
 use discv5::enr::k256::elliptic_curve::rand_core::RngCore;
 use discv5::enr::k256::elliptic_curve::rand_core::SeedableRng;
 use discv5::enr::{CombinedKey, EnrBuilder, NodeId};
@@ -7,7 +7,6 @@ use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
 use std::u64;
 use testground::client::Client;
-use testground::RunParameters;
 use tokio::task;
 use tracing::debug;
 
@@ -40,28 +39,29 @@ struct InstanceInfo {
     role: Role,
 }
 
-pub(super) struct MonopolizingByIncomingNodes {
-    run_parameters: RunParameters,
-}
+pub(super) struct MonopolizingByIncomingNodes {}
 
 impl MonopolizingByIncomingNodes {
-    pub(super) fn new(run_parameters: RunParameters) -> Self {
-        MonopolizingByIncomingNodes { run_parameters }
+    pub(super) fn new() -> Self {
+        MonopolizingByIncomingNodes {}
     }
 
     pub(super) async fn run(&self, client: Client) -> Result<(), Box<dyn std::error::Error>> {
+        let run_parameters = client.run_parameters();
         // Note: The seq starts from 1.
-        let group_seq = get_group_seq(&client, &self.run_parameters.test_group_id).await?;
-        let role: Role = self.run_parameters.test_group_id.as_str().into();
-        client.record_message(format!("role: {:?}, group_seq: {}", role, group_seq));
+        let role: Role = run_parameters.test_group_id.as_str().into();
+        client.record_message(format!(
+            "role: {:?}, group_seq: {}",
+            role,
+            client.group_seq()
+        ));
 
         // ////////////////////////
         // Construct a local Enr
         // ////////////////////////
-        let enr_key = Self::generate_deterministic_keypair(group_seq, &role);
+        let enr_key = Self::generate_deterministic_keypair(client.group_seq(), &role);
         let enr = EnrBuilder::new("v4")
-            .ip(self
-                .run_parameters
+            .ip(run_parameters
                 .data_network_ip()?
                 .expect("IP address for the data network"))
             .udp4(9000)
@@ -73,7 +73,7 @@ impl MonopolizingByIncomingNodes {
         // //////////////////////////////////////////////////////////////
         let discv5_config = Discv5ConfigBuilder::new()
             .incoming_bucket_limit(
-                self.run_parameters
+                run_parameters
                     .test_instance_params
                     .get("incoming_bucket_limit")
                     .expect("incoming_bucket_limit")
@@ -109,7 +109,7 @@ impl MonopolizingByIncomingNodes {
         client
             .signal_and_wait(
                 STATE_COMPLETED_TO_COLLECT_INSTANCE_INFORMATION,
-                self.run_parameters.test_instance_count,
+                run_parameters.test_instance_count,
             )
             .await?;
 
@@ -163,7 +163,7 @@ impl MonopolizingByIncomingNodes {
         let mut honest = vec![];
         let mut attackers = vec![];
 
-        for i in publish_and_collect(client, &self.run_parameters, instance_info.clone()).await? {
+        for i in publish_and_collect(client, instance_info.clone()).await? {
             match i.role {
                 Role::Victim => victim.push(i),
                 Role::Honest => honest.push(i),
@@ -207,7 +207,7 @@ impl MonopolizingByIncomingNodes {
         let result = discv5.add_enr(honest.enr.clone());
 
         client
-            .signal_and_wait(STATE_DONE, self.run_parameters.test_instance_count)
+            .signal_and_wait(STATE_DONE, client.run_parameters().test_instance_count)
             .await?;
 
         if let Err(msg) = result {
@@ -223,7 +223,7 @@ impl MonopolizingByIncomingNodes {
     async fn play_honest(&self, client: Client) -> Result<(), Box<dyn std::error::Error>> {
         // Nothing to do, just wait until the simulation has been done.
         client
-            .signal_and_wait(STATE_DONE, self.run_parameters.test_instance_count)
+            .signal_and_wait(STATE_DONE, client.run_parameters().test_instance_count)
             .await?;
 
         client.record_success().await?;
@@ -250,7 +250,7 @@ impl MonopolizingByIncomingNodes {
 
         // Wait until checking on the victim has been done.
         client
-            .signal_and_wait(STATE_DONE, self.run_parameters.test_instance_count)
+            .signal_and_wait(STATE_DONE, client.run_parameters().test_instance_count)
             .await?;
 
         client.record_success().await?;
