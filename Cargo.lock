@@ -349,8 +349,6 @@ version = "0.1.0"
 dependencies = [
  "chrono",
  "discv5",
- "if-addrs",
- "ipnetwork",
  "rand_xorshift",
  "serde",
  "serde_json",
