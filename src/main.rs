@@ -13,7 +13,7 @@ const STATE_NETWORK_CONFIGURED: &str = "state_network_configured";
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let client = testground::client::Client::new_and_init().await?;
+    let client = Client::new_and_init().await?;
 
     // Enable tracing.
     let env_filter = tracing_subscriber::EnvFilter::try_from_default_env()
