@@ -5,14 +5,15 @@ WORKDIR /usr/src/test-plan
 # See https://blog.mgattozzi.dev/caching-rust-docker-builds/
 # And https://github.com/rust-lang/cargo/issues/2644
 RUN mkdir -p ./plan/src/
-RUN echo 'fn main() { println!("This is a `main()` function that does nothing, for caching dependencies.") }' > ./plan/src/main.rs
+RUN echo "fn main() { println!(\"If you see this message, you may want to clean up the target directory or the Docker build cache.\") }" > ./plan/src/main.rs
 COPY ./plan/Cargo.lock ./plan/
 COPY ./plan/Cargo.toml ./plan/
 RUN cd ./plan/ && cargo build --release
 
 COPY . .
 
-# This is in order to make sure `main.rs`s mtime timestamp is updated.
+# This is in order to make sure `main.rs`s mtime timestamp is updated to avoid the dummy `main`
+# remaining in the release binary.
 # https://github.com/rust-lang/cargo/issues/9598
 RUN touch ./plan/src/main.rs
 
