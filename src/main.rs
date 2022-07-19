@@ -76,7 +76,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .await?
         }
         "eclipse-attack-pretending-not-to-know" => {
-            eclipse::pretending_not_to_know::PretendingNotToKnow::new(run_parameters)
+            eclipse::pretending_not_to_know::PretendingNotToKnow {}
                 .run(client.clone())
                 .await?
         }

@@ -1,12 +1,11 @@
 use crate::eclipse::generate_deterministic_keypair;
-use crate::{get_group_seq, publish_and_collect};
+use crate::publish_and_collect;
 use discv5::enr::{CombinedKey, EnrBuilder, NodeId};
 use discv5::{ConnectionDirection, Discv5, Discv5ConfigBuilder, Enr};
 use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
 use std::time::Duration;
 use testground::client::Client;
-use testground::RunParameters;
 use tokio::task;
 use tracing::debug;
 
@@ -15,9 +14,7 @@ const STATE_COMPLETED_TO_COLLECT_INSTANCE_INFORMATION: &str =
 const STATE_ATTACKERS_SENT_QUERY: &str = "STATE_ATTACKERS_SENT_QUERY";
 const STATE_DONE: &str = "STATE_DONE";
 
-pub(crate) struct PretendingNotToKnow {
-    run_parameters: RunParameters,
-}
+pub(crate) struct PretendingNotToKnow {}
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 enum Role {
@@ -42,23 +39,22 @@ struct InstanceInfo {
 }
 
 impl PretendingNotToKnow {
-    pub(crate) fn new(run_parameters: RunParameters) -> Self {
-        PretendingNotToKnow { run_parameters }
-    }
-
     pub(crate) async fn run(&self, client: Client) -> Result<(), Box<dyn std::error::Error>> {
         // Note: The seq starts from 1.
-        let group_seq = get_group_seq(&client, &self.run_parameters.test_group_id).await?;
-        let role: Role = self.run_parameters.test_group_id.as_str().into();
-        client.record_message(format!("role: {:?}, group_seq: {}", role, group_seq));
+        let role: Role = client.run_parameters().test_group_id.as_str().into();
+        client.record_message(format!(
+            "role: {:?}, group_seq: {}",
+            role,
+            client.group_seq()
+        ));
 
         // ////////////////////////
         // Construct a local Enr
         // ////////////////////////
-        let enr_key = Self::generate_deterministic_keypair(group_seq, &role);
+        let enr_key = Self::generate_deterministic_keypair(client.group_seq(), &role);
         let enr = EnrBuilder::new("v4")
-            .ip(self
-                .run_parameters
+            .ip(client
+                .run_parameters()
                 .data_network_ip()?
                 .expect("IP address for the data network"))
             .udp4(9000)
@@ -102,7 +98,7 @@ impl PretendingNotToKnow {
         client
             .signal_and_wait(
                 STATE_COMPLETED_TO_COLLECT_INSTANCE_INFORMATION,
-                self.run_parameters.test_instance_count,
+                client.run_parameters().test_instance_count,
             )
             .await?;
 
@@ -150,7 +146,7 @@ impl PretendingNotToKnow {
         let mut victim = vec![];
         let mut attackers = vec![];
 
-        for i in publish_and_collect(client, &self.run_parameters, instance_info.clone()).await? {
+        for i in publish_and_collect(client, instance_info.clone()).await? {
             match i.role {
                 Role::Victim => victim.push(i),
                 Role::Attacker => attackers.push(i),
@@ -206,7 +202,7 @@ impl PretendingNotToKnow {
         }
 
         client
-            .signal_and_wait(STATE_DONE, self.run_parameters.test_instance_count)
+            .signal_and_wait(STATE_DONE, client.run_parameters().test_instance_count)
             .await?;
 
         client.record_success().await?;
@@ -229,7 +225,7 @@ impl PretendingNotToKnow {
 
         // Wait until checking on the victim has been done.
         client
-            .signal_and_wait(STATE_DONE, self.run_parameters.test_instance_count)
+            .signal_and_wait(STATE_DONE, client.run_parameters().test_instance_count)
             .await?;
 
         client.record_success().await?;
