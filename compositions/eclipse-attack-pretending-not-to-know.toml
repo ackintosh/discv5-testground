@@ -1,0 +1,25 @@
+[metadata]
+name = "eclipse-attack-pretending-not-to-know"
+author = "Akihito Nakano"
+
+[global]
+plan = "discv5-testground"
+case = "eclipse-attack-pretending-not-to-know"
+total_instances = 20
+builder = "docker:generic"
+runner = "local:docker"
+disable_metrics = false
+
+[[groups]]
+id = "victim"
+  [groups.instances]
+  count = 1
+  [groups.run]
+    [groups.run.test_params]
+
+[[groups]]
+id = "attackers"
+  [groups.instances]
+  count = 19
+  [groups.run]
+    [groups.run.test_params]
