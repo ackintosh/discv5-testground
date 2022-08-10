@@ -15,7 +15,7 @@ chrono = "0.4.19"
 # Specifying the patched revision for now:  https://github.com/sigp/discv5/pull/122
 discv5 = { git = "https://github.com/sigp/discv5.git", rev = "e02821e75ad2babee934698d9073ee9813bc01ae" }
 rand_xorshift = "0.3.0"
-serde = "1.0.142"
+serde = "1.0.143"
 serde_json = "1.0.83"
 # TODO: update testground once the next version has been released.
 testground = { git = "https://github.com/testground/sdk-rust.git", rev = "0a1d439f5ca63daf8c1d8d99e5ab1752c6351a25" }
