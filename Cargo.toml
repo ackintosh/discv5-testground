@@ -10,7 +10,7 @@ name = "discv5-testground"
 path = "src/main.rs"
 
 [dependencies]
-chrono = "0.4.21"
+chrono = "0.4.22"
 # TODO: update discv5 once the next version (beta.14) has been released: https://github.com/sigp/discv5/pull/118
 # Specifying the patched revision for now:  https://github.com/sigp/discv5/pull/122
 discv5 = { git = "https://github.com/sigp/discv5.git", rev = "e02821e75ad2babee934698d9073ee9813bc01ae" }
