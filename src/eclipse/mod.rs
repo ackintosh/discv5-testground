@@ -148,8 +148,8 @@ impl MonopolizingByIncomingNodes {
 
         let index = match role {
             Role::Victim => group_seq,
-            Role::Honest => (group_seq + 1), // Take the number of victim into account
-            Role::Attacker => (group_seq + 2), // Take the number of victim + honest into account
+            Role::Honest => group_seq + 1, // Take the number of victim into account
+            Role::Attacker => group_seq + 2, // Take the number of victim + honest into account
         } - 1; // The group_seq starts from 1, not from 0, so we should minus one here.
         keypairs.remove(usize::try_from(index).expect("Valid as usize"))
     }
