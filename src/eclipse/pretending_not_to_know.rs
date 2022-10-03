@@ -68,6 +68,9 @@ impl PretendingNotToKnow {
             .incoming_bucket_limit(8)
             .session_timeout(match role {
                 Role::Victim => Duration::from_secs(100),
+                // By setting 0 to `session_timeout`, attackers do pretending not to know
+                // the victim, i.e. attackers response with WHOAREYOU to the victim even if after
+                // handshake.
                 Role::Attacker => Duration::from_secs(0),
             })
             .build();
@@ -86,7 +89,7 @@ impl PretendingNotToKnow {
         });
 
         // //////////////////////////////////////////////////////////////
-        // Collect information of all participants in the test case
+        // Collect information of all participants in this test case
         // //////////////////////////////////////////////////////////////
         let instance_info = InstanceInfo {
             enr: discv5.local_enr(),
@@ -171,7 +174,10 @@ impl PretendingNotToKnow {
             )
             .await?;
 
-        println!("connected peers: {}", discv5.connected_peers());
+        //
+        tokio::time::sleep(Duration::from_millis(5000)).await;
+
+        client.record_message(println!("Connected peers: {}", discv5.connected_peers()));
 
         for _ in 0..100 {
             tokio::time::sleep(Duration::from_millis(500)).await;
@@ -215,6 +221,7 @@ impl PretendingNotToKnow {
         client: Client,
         victim: &InstanceInfo,
     ) -> Result<(), Box<dyn std::error::Error>> {
+        // Send FINDNODE to the victim.
         discv5.add_enr(victim.enr.clone())?;
         if let Err(e) = discv5.find_node(NodeId::random()).await {
             client.record_message(format!("Failed to run query: {}", e));
@@ -223,10 +230,21 @@ impl PretendingNotToKnow {
         // Inform that sending query has been done.
         client.signal(STATE_ATTACKERS_SENT_QUERY).await?;
 
-        // Wait until checking on the victim has been done.
-        client
-            .signal_and_wait(STATE_DONE, client.run_parameters().test_instance_count)
-            .await?;
+        let mut query_interval = tokio::time::interval(Duration::from_millis(1000));
+
+        loop {
+            tokio::select! {
+            // Wait until checking on the victim has been done.
+            _ = client.signal_and_wait(STATE_DONE, client.run_parameters().test_instance_count) => {
+                break;
+            }
+            _ = query_interval.tick() => {
+                if let Err(e) = discv5.find_node(NodeId::random()).await {
+                    client.record_message(format!("Failed to run query: {}", e));
+                }
+            }
+        }
+        }
 
         client.record_success().await?;
         Ok(())
