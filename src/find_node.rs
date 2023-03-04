@@ -193,7 +193,7 @@ pub(super) async fn find_node(client: Client) -> Result<(), Box<dyn std::error::
             .add_field("active_sessions", metrics.active_sessions as u64)
             .add_field(
                 "unsolicited_requests_per_second",
-                metrics.unsolicited_requests_per_second as f64,
+                metrics.unsolicited_requests_per_second,
             )
             .add_field("bytes_sent", metrics.bytes_sent as u64)
             .add_field("bytes_recv", metrics.bytes_recv as u64)
