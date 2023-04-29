@@ -1,4 +1,4 @@
-use crate::publish_and_collect;
+use crate::utils::publish_and_collect;
 use discv5::enr::k256::elliptic_curve::rand_core::RngCore;
 use discv5::enr::k256::elliptic_curve::rand_core::SeedableRng;
 use discv5::enr::{CombinedKey, EnrBuilder, NodeId};

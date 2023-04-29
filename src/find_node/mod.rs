@@ -1,4 +1,4 @@
-use crate::publish_and_collect;
+use crate::utils::publish_and_collect;
 use chrono::Local;
 use discv5::enr::{CombinedKey, EnrBuilder, NodeId};
 use discv5::{Discv5, Discv5Config, Enr, Key};
