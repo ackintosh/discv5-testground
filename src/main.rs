@@ -69,7 +69,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Run test case
     // //////////////////////////////////////////////////////////////
     match client.run_parameters().test_case.clone().as_str() {
-        "find-node" => find_node::find_node(client.clone()).await?,
+        "find-node" => find_node::run(client.clone()).await?,
         "eclipse-attack-monopolizing-by-incoming-nodes" => {
             eclipse::MonopolizingByIncomingNodes::new()
                 .run(client.clone())

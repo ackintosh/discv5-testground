@@ -37,7 +37,7 @@ impl InstanceInfo {
     }
 }
 
-pub(super) async fn find_node(client: Client) -> Result<(), Box<dyn std::error::Error>> {
+pub(super) async fn run(client: Client) -> Result<(), Box<dyn std::error::Error>> {
     let run_parameters = client.run_parameters();
     // ////////////////////////
     // Construct a local Enr
