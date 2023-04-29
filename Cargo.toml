@@ -14,6 +14,7 @@ chrono = "0.4.24"
 # TODO: update discv5 once the next version (beta.14) has been released: https://github.com/sigp/discv5/pull/118
 # Specifying the patched revision for now:  https://github.com/sigp/discv5/pull/122
 discv5 = { git = "https://github.com/sigp/discv5.git", rev = "e02821e75ad2babee934698d9073ee9813bc01ae" }
+ipnetwork = "0.20.0"
 rand_xorshift = "0.3.0"
 serde = "1.0.160"
 serde_json = "1.0.94"
