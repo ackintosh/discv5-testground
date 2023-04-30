@@ -57,7 +57,7 @@ pub(super) async fn run(client: Client) -> Result<(), Box<dyn std::error::Error>
     // //////////////////////////////////////////////////////////////
     // Start Discovery v5 server
     // //////////////////////////////////////////////////////////////
-    let mut discv5 = Discv5::new(enr, enr_key, Discv5Config::default())?;
+    let mut discv5: Discv5 = Discv5::new(enr, enr_key, Discv5Config::default())?;
     discv5
         .start("0.0.0.0:9000".parse::<SocketAddr>()?)
         .await
