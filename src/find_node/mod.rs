@@ -1,4 +1,4 @@
-use crate::publish_and_collect;
+use crate::utils::publish_and_collect;
 use chrono::Local;
 use discv5::enr::{CombinedKey, EnrBuilder, NodeId};
 use discv5::{Discv5, Discv5Config, Enr, Key};
@@ -37,7 +37,7 @@ impl InstanceInfo {
     }
 }
 
-pub(super) async fn find_node(client: Client) -> Result<(), Box<dyn std::error::Error>> {
+pub(super) async fn run(client: Client) -> Result<(), Box<dyn std::error::Error>> {
     let run_parameters = client.run_parameters();
     // ////////////////////////
     // Construct a local Enr
