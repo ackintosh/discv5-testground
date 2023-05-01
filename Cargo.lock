@@ -463,7 +463,7 @@ version = "0.1.0"
 dependencies = [
  "chrono",
  "discv5",
- "ipnetwork 0.20.0",
+ "ipnetwork",
  "rand_xorshift",
  "serde",
  "serde_json",
@@ -971,15 +971,6 @@ name = "ipnet"
 version = "2.7.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "12b6ee2129af8d4fb011108c73d99a1b83a85977f23b82460c0ae2e25bb4b57f"
-
-[[package]]
-name = "ipnetwork"
-version = "0.20.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bf466541e9d546596ee94f9f69590f89473455f88372423e0008fc1a7daf100e"
-dependencies = [
- "serde",
-]
 
 [[package]]
 name = "ipnetwork"
@@ -1755,7 +1746,7 @@ dependencies = [
  "futures",
  "if-addrs",
  "influxdb",
- "ipnetwork 0.19.0",
+ "ipnetwork",
  "log",
  "serde",
  "serde_json",
