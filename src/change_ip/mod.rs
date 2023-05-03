@@ -1,3 +1,6 @@
+mod params;
+
+use crate::change_ip::params::Params;
 use crate::utils::publish_and_collect;
 use discv5::enr::{CombinedKey, EnrBuilder};
 use discv5::{Discv5, Discv5ConfigBuilder, Enr};
@@ -24,6 +27,7 @@ pub(crate) async fn run(client: Client) -> Result<(), Box<dyn std::error::Error>
     let ip = run_parameters
         .data_network_ip()?
         .expect("IP address for the data network");
+    let params = Params::new(&run_parameters.test_instance_params)?;
 
     // ////////////////////////
     // Construct local Enr
@@ -39,10 +43,10 @@ pub(crate) async fn run(client: Client) -> Result<(), Box<dyn std::error::Error>
     // Start discv5
     // ////////////////////////
     let config = Discv5ConfigBuilder::new()
-        .vote_duration(Duration::from_secs(3))
-        .ping_interval(Duration::from_secs(1))
+        .vote_duration(Duration::from_secs(params.vote_duration))
+        .ping_interval(Duration::from_secs(params.ping_interval))
         .build();
-    let mut discv5 = Discv5::new(enr.clone(), enr_key, config)?;
+    let mut discv5: Discv5 = Discv5::new(enr.clone(), enr_key, config)?;
     discv5
         .start("0.0.0.0:9000".parse::<SocketAddr>()?)
         .await
@@ -104,7 +108,7 @@ pub(crate) async fn run(client: Client) -> Result<(), Box<dyn std::error::Error>
     // //////////////////////////////////////////////////////////////
     // Change IP address
     // //////////////////////////////////////////////////////////////
-    tokio::time::sleep(Duration::from_secs(5)).await;
+    tokio::time::sleep(Duration::from_secs(params.duration_before)).await;
 
     if instance_info.seq == 1 {
         let new_ip = change_ip(&client, &participants).await?;
@@ -114,7 +118,7 @@ pub(crate) async fn run(client: Client) -> Result<(), Box<dyn std::error::Error>
         ));
     }
 
-    tokio::time::sleep(Duration::from_secs(5)).await;
+    tokio::time::sleep(Duration::from_secs(params.duration_after)).await;
 
     client.record_success().await?;
     Ok(())
