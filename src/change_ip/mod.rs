@@ -126,7 +126,7 @@ pub(crate) async fn run(client: Client) -> Result<(), Box<dyn std::error::Error>
 
 async fn change_ip(
     client: &Client,
-    participants: &Vec<InstanceInfo>,
+    participants: &[InstanceInfo],
 ) -> Result<IpAddr, Box<dyn std::error::Error>> {
     let participants_ip4 = participants
         .iter()
@@ -154,11 +154,7 @@ async fn change_ip(
     client
         .configure_network(NetworkConfiguration {
             network: DEFAULT_DATA_NETWORK.to_owned(),
-            ipv4: Some(
-                format!("{}/{}", new_ip.to_string(), subnet.prefix())
-                    .parse()
-                    .unwrap(),
-            ),
+            ipv4: Some(format!("{}/{}", new_ip, subnet.prefix()).parse().unwrap()),
             ipv6: None,
             enable: true,
             default: LinkShape {
@@ -170,7 +166,7 @@ async fn change_ip(
                     .parse::<u64>()?
                     * 1_000_000, // Translate from millisecond to nanosecond
                 jitter: 0,
-                bandwidth: 1 * 1024 * 1024,
+                bandwidth: 1048576, // 1Mib
                 filter: FilterAction::Accept,
                 loss: 0.0,
                 corrupt: 0.0,
