@@ -2,9 +2,9 @@ use crate::utils::publish_and_collect;
 use discv5::enr::k256::elliptic_curve::rand_core::RngCore;
 use discv5::enr::k256::elliptic_curve::rand_core::SeedableRng;
 use discv5::enr::{CombinedKey, EnrBuilder, NodeId};
-use discv5::{enr, Discv5, Discv5ConfigBuilder, Enr};
+use discv5::{enr, Discv5, Discv5ConfigBuilder, Enr, ListenConfig};
 use serde::{Deserialize, Serialize};
-use std::net::SocketAddr;
+use std::net::Ipv4Addr;
 use std::u64;
 use testground::client::Client;
 use tokio::task;
@@ -71,7 +71,8 @@ impl MonopolizingByIncomingNodes {
         // //////////////////////////////////////////////////////////////
         // Start Discovery v5 server
         // //////////////////////////////////////////////////////////////
-        let discv5_config = Discv5ConfigBuilder::new()
+        let listen_config = ListenConfig::new_ipv4(Ipv4Addr::UNSPECIFIED, 9000);
+        let discv5_config = Discv5ConfigBuilder::new(listen_config)
             .incoming_bucket_limit(
                 run_parameters
                     .test_instance_params
@@ -82,10 +83,7 @@ impl MonopolizingByIncomingNodes {
             )
             .build();
         let mut discv5 = Discv5::new(enr, enr_key, discv5_config)?;
-        discv5
-            .start("0.0.0.0:9000".parse::<SocketAddr>()?)
-            .await
-            .expect("Start Discovery v5 server");
+        discv5.start().await.expect("Start Discovery v5 server");
 
         // Observe Discv5 events.
         let mut event_stream = discv5.event_stream().await.expect("Discv5Event");
@@ -269,7 +267,7 @@ fn generate_deterministic_keypair(n: usize, seed: u64) -> Vec<CombinedKey> {
             loop {
                 // until a value is given within the curve order
                 rng.fill_bytes(&mut b);
-                if let Ok(k) = enr::k256::ecdsa::SigningKey::from_bytes(&b) {
+                if let Ok(k) = enr::k256::ecdsa::SigningKey::from_slice(&b) {
                     break k;
                 }
             }

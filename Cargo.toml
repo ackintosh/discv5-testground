@@ -11,11 +11,9 @@ path = "src/main.rs"
 
 [dependencies]
 chrono = "0.4.24"
-discv5 = { git = "https://github.com/ackintosh/discv5.git", rev = "2321f8b7e478fc48d9f68712ab36b0ff5f2fc31a" }
-#discv5 = "0.2.2"
-ipnetwork = "0.20.0"
+discv5 = { git = "https://github.com/sigp/discv5.git", rev = "269b7f0fc73f85484b0c08929a8e7540ab5de20f" }
 rand_xorshift = "0.3.0"
-serde = "1.0.160"
+serde = "1.0.163"
 serde_json = "1.0.96"
 testground = "0.4.0"
 tokio = { version = "1.28.0", features = ["macros"] }
