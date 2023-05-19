@@ -1,4 +1,4 @@
-FROM rust:1.62-bullseye as builder
+FROM rust:1.69-bullseye as builder
 WORKDIR /usr/src/test-plan
 
 # Cache dependencies between test runs,
