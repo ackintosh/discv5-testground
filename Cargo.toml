@@ -11,7 +11,8 @@ path = "src/main.rs"
 
 [dependencies]
 chrono = "0.4.24"
-discv5 = "0.2.2"
+discv5 = { git = "https://github.com/ackintosh/discv5.git", rev = "2321f8b7e478fc48d9f68712ab36b0ff5f2fc31a" }
+#discv5 = "0.2.2"
 ipnetwork = "0.20.0"
 rand_xorshift = "0.3.0"
 serde = "1.0.160"
