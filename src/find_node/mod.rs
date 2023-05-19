@@ -1,9 +1,9 @@
 use crate::utils::publish_and_collect;
 use chrono::Local;
 use discv5::enr::{CombinedKey, EnrBuilder, NodeId};
-use discv5::{Discv5, Discv5Config, Enr, Key};
+use discv5::{Discv5, Discv5ConfigBuilder, Enr, Key, ListenConfig};
 use serde::{Deserialize, Serialize};
-use std::net::SocketAddr;
+use std::net::Ipv4Addr;
 use testground::client::Client;
 use testground::WriteQuery;
 use tokio::task;
@@ -57,11 +57,13 @@ pub(super) async fn run(client: Client) -> Result<(), Box<dyn std::error::Error>
     // //////////////////////////////////////////////////////////////
     // Start Discovery v5 server
     // //////////////////////////////////////////////////////////////
-    let mut discv5: Discv5 = Discv5::new(enr, enr_key, Discv5Config::default())?;
-    discv5
-        .start("0.0.0.0:9000".parse::<SocketAddr>()?)
-        .await
-        .expect("Start Discovery v5 server");
+    let listen_config = ListenConfig::new_ipv4(Ipv4Addr::UNSPECIFIED, 9000);
+    let mut discv5: Discv5 = Discv5::new(
+        enr,
+        enr_key,
+        Discv5ConfigBuilder::new(listen_config).build(),
+    )?;
+    discv5.start().await.expect("Start Discovery v5 server");
 
     // Observe Discv5 events.
     let mut event_stream = discv5.event_stream().await.expect("Discv5Event");
