@@ -3,16 +3,15 @@ mod params;
 use crate::change_ip::params::Params;
 use crate::utils::publish_and_collect;
 use discv5::enr::{CombinedKey, EnrBuilder};
-use discv5::{Discv5, Discv5ConfigBuilder, Enr};
+use discv5::{Discv5, Discv5ConfigBuilder, Enr, ListenConfig};
 use serde::{Deserialize, Serialize};
-use std::net::{IpAddr, SocketAddr};
+use std::net::{IpAddr, Ipv4Addr};
 use std::time::Duration;
 use testground::client::Client;
 use testground::network_conf::{
     FilterAction, LinkShape, NetworkConfiguration, RoutingPolicyType, DEFAULT_DATA_NETWORK,
 };
 
-const STATE_COMPLETED_TO_ADD_ENR: &str = "state_completed_to_add_enr";
 const STATE_COMPLETED_TO_FINDNODE: &str = "state_completed_to_findnode";
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -42,15 +41,14 @@ pub(crate) async fn run(client: Client) -> Result<(), Box<dyn std::error::Error>
     // ////////////////////////
     // Start discv5
     // ////////////////////////
-    let config = Discv5ConfigBuilder::new()
+    let listen_config = ListenConfig::new_ipv4(Ipv4Addr::UNSPECIFIED, 9000);
+    let config = Discv5ConfigBuilder::new(listen_config)
         .vote_duration(Duration::from_secs(params.vote_duration))
         .ping_interval(Duration::from_secs(params.ping_interval))
+        .enr_peer_update_min(run_parameters.test_instance_count as usize - 1)
         .build();
     let mut discv5: Discv5 = Discv5::new(enr.clone(), enr_key, config)?;
-    discv5
-        .start("0.0.0.0:9000".parse::<SocketAddr>()?)
-        .await
-        .expect("Start Discovery v5 server");
+    discv5.start().await.expect("Start Discovery v5 server");
 
     // //////////////////////////////////////////////////////////////
     // Collect information of all participants in the test case
@@ -71,29 +69,16 @@ pub(crate) async fn run(client: Client) -> Result<(), Box<dyn std::error::Error>
     // //////////////////////////////////////////////////////////////
     // Construct topology
     // //////////////////////////////////////////////////////////////
-    for p in participants
-        .iter()
-        .filter(|&p| p.seq != client.global_seq())
-    {
-        discv5.add_enr(p.enr.clone())?;
-    }
-
-    client
-        .signal_and_wait(
-            STATE_COMPLETED_TO_ADD_ENR,
-            run_parameters.test_instance_count,
-        )
-        .await?;
-
     // Run FINDNODE query to connect to other participants.
-    for p in participants
-        .iter()
-        .filter(|&p| p.seq != client.global_seq())
-    {
-        let _enrs = discv5
-            .find_node(p.enr.node_id())
-            .await
-            .map_err(|e| e.to_string())?;
+    if instance_info.seq == 1 {
+        for p in participants
+            .iter()
+            .filter(|&p| p.seq != client.global_seq())
+        {
+            let _ = discv5
+                .find_node_designated_peer(p.enr.clone(), vec![0])
+                .await;
+        }
     }
 
     client
@@ -103,7 +88,18 @@ pub(crate) async fn run(client: Client) -> Result<(), Box<dyn std::error::Error>
         )
         .await?;
 
-    client.record_message(format!("connected_peers: {}", discv5.connected_peers()));
+    client.record_message(format!(
+        "peers: {:?}",
+        discv5
+            .kbuckets()
+            .iter()
+            .map(|b| (
+                b.node.value.ip4().unwrap(),
+                b.status.direction,
+                b.status.state
+            ))
+            .collect::<Vec<_>>()
+    ));
 
     // //////////////////////////////////////////////////////////////
     // Change IP address

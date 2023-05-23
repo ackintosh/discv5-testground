@@ -424,7 +424,7 @@ dependencies = [
 [[package]]
 name = "discv5"
 version = "0.2.2"
-source = "git+https://github.com/sigp/discv5.git?rev=269b7f0fc73f85484b0c08929a8e7540ab5de20f#269b7f0fc73f85484b0c08929a8e7540ab5de20f"
+source = "git+https://github.com/ackintosh/discv5.git?rev=25ed489b1d762da5a3ef13192caa71ee0dac308b#25ed489b1d762da5a3ef13192caa71ee0dac308b"
 dependencies = [
  "aes",
  "aes-gcm",
@@ -457,7 +457,6 @@ version = "0.1.0"
 dependencies = [
  "chrono",
  "discv5",
- "ipnetwork",
  "rand_xorshift",
  "serde",
  "serde_json",
