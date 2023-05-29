@@ -10,7 +10,7 @@ name = "discv5-testground"
 path = "src/main.rs"
 
 [dependencies]
-chrono = "0.4.24"
+chrono = "0.4.25"
 discv5 = { git = "https://github.com/sigp/discv5.git", rev = "269b7f0fc73f85484b0c08929a8e7540ab5de20f" }
 rand_xorshift = "0.3.0"
 serde = "1.0.163"
