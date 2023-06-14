@@ -57,7 +57,10 @@ pub(super) async fn run(client: Client) -> Result<(), Box<dyn std::error::Error>
     // //////////////////////////////////////////////////////////////
     // Start Discovery v5 server
     // //////////////////////////////////////////////////////////////
-    let listen_config = ListenConfig::Ipv4 { ip: Ipv4Addr::UNSPECIFIED, port: 9000 };
+    let listen_config = ListenConfig::Ipv4 {
+        ip: Ipv4Addr::UNSPECIFIED,
+        port: 9000,
+    };
     let mut discv5: Discv5 = Discv5::new(
         enr,
         enr_key,
