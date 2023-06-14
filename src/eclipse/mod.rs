@@ -71,7 +71,7 @@ impl MonopolizingByIncomingNodes {
         // //////////////////////////////////////////////////////////////
         // Start Discovery v5 server
         // //////////////////////////////////////////////////////////////
-        let listen_config = ListenConfig::new_ipv4(Ipv4Addr::UNSPECIFIED, 9000);
+        let listen_config = ListenConfig::Ipv4 { ip: Ipv4Addr::UNSPECIFIED, port: 9000 };
         let discv5_config = Discv5ConfigBuilder::new(listen_config)
             .incoming_bucket_limit(
                 run_parameters

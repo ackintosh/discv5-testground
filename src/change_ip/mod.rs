@@ -41,7 +41,7 @@ pub(crate) async fn run(client: Client) -> Result<(), Box<dyn std::error::Error>
     // ////////////////////////
     // Start discv5
     // ////////////////////////
-    let listen_config = ListenConfig::new_ipv4(Ipv4Addr::UNSPECIFIED, 9000);
+    let listen_config = ListenConfig::Ipv4 { ip: Ipv4Addr::UNSPECIFIED, port: 9000 };
     let config = Discv5ConfigBuilder::new(listen_config)
         .vote_duration(Duration::from_secs(params.vote_duration))
         .ping_interval(Duration::from_secs(params.ping_interval))
@@ -115,6 +115,10 @@ pub(crate) async fn run(client: Client) -> Result<(), Box<dyn std::error::Error>
     }
 
     tokio::time::sleep(Duration::from_secs(params.duration_after)).await;
+
+    if instance_info.seq == 1 {
+        println!("debugggg: {:?}", discv5.table_entries());
+    }
 
     client.record_success().await?;
     Ok(())
