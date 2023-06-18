@@ -30,3 +30,11 @@ instances = { min = 20, max = 20, default = 20 }
 
   # Params for the `victim` group
   incoming_bucket_limit = { type = "int", desc = "A maximum limit to the number of incoming nodes per bucket.", default = 16 }
+
+# ENR update
+[[testcases]]
+name = "enr-update"
+instances = { min = 11, max = 100, default = 11 }
+
+  [testcases.params]
+  latency = { type = "int", desc = "Latency between peers.", unit = "ms", default = 100 }

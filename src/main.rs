@@ -1,4 +1,5 @@
 mod eclipse;
+mod enr_update;
 mod find_node;
 mod utils;
 
@@ -64,6 +65,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .run(client.clone())
                 .await?
         }
+        "enr-update" => enr_update::run(client.clone()).await?,
         _ => unreachable!(),
     };
 
