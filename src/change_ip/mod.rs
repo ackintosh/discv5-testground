@@ -12,7 +12,7 @@ use testground::network_conf::{
     FilterAction, LinkShape, NetworkConfiguration, RoutingPolicyType, DEFAULT_DATA_NETWORK,
 };
 
-const STATE_COMPLETED_TO_FINDNODE: &str = "state_completed_to_findnode";
+const STATE_COMPLETED_TO_CONNECT: &str = "state_completed_to_connect";
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 struct InstanceInfo {
@@ -86,7 +86,7 @@ pub(crate) async fn run(client: Client) -> Result<(), Box<dyn std::error::Error>
 
     client
         .signal_and_wait(
-            STATE_COMPLETED_TO_FINDNODE,
+            STATE_COMPLETED_TO_CONNECT,
             run_parameters.test_instance_count,
         )
         .await?;
