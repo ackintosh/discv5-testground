@@ -38,3 +38,6 @@ instances = { min = 11, max = 100, default = 11 }
 
   [testcases.params]
   latency = { type = "int", desc = "Latency between peers.", unit = "ms", default = 100 }
+
+  # discv5 params
+  ping_interval = { type = "int", desc = "The time between pings.", unit = "sec", default = 30 }

@@ -1,13 +1,14 @@
+mod params;
+
+use crate::enr_update::params::Params;
 use crate::utils::publish_and_collect;
 use chrono::Local;
-use discv5::enr::{CombinedKey, EnrBuilder, NodeId};
-use discv5::{Discv5, Discv5ConfigBuilder, Discv5Event, Enr, Key, ListenConfig};
+use discv5::enr::{CombinedKey, EnrBuilder};
+use discv5::{Discv5, Discv5ConfigBuilder, Discv5Event, Enr, ListenConfig};
 use serde::{Deserialize, Serialize};
-use std::net::{Ipv4Addr, SocketAddr};
+use std::net::Ipv4Addr;
 use std::time::Duration;
 use testground::client::Client;
-use testground::WriteQuery;
-use tokio::sync::oneshot::error::RecvError;
 use tokio::{sync, task};
 use tracing::{debug, error, info};
 
@@ -23,6 +24,8 @@ struct InstanceInfo {
 
 pub(super) async fn run(client: Client) -> Result<(), Box<dyn std::error::Error>> {
     let run_parameters = client.run_parameters();
+    let params = Params::new(&run_parameters.test_instance_params)?;
+
     // ////////////////////////
     // Construct a local Enr
     // ////////////////////////
@@ -53,7 +56,7 @@ pub(super) async fn run(client: Client) -> Result<(), Box<dyn std::error::Error>
         enr,
         enr_key,
         Discv5ConfigBuilder::new(listen_config)
-            .ping_interval(Duration::from_secs(10))
+            .ping_interval(Duration::from_secs(params.ping_interval))
             .build(),
     )?;
     discv5.start().await.expect("Start Discovery v5 server");
@@ -76,12 +79,9 @@ pub(super) async fn run(client: Client) -> Result<(), Box<dyn std::error::Error>
 
         task::spawn(async move {
             while let Some(event) = event_stream.recv().await {
-                match event {
-                    Discv5Event::SocketUpdated(socket_addr) => {
-                        sender.send(socket_addr).unwrap();
-                        break;
-                    }
-                    _ => {}
+                if let Discv5Event::SocketUpdated(socket_addr) = event {
+                    sender.send(socket_addr).unwrap();
+                    break;
                 }
             }
         });
