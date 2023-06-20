@@ -6,7 +6,6 @@ use chrono::Local;
 use discv5::enr::{CombinedKey, EnrBuilder};
 use discv5::{Discv5, Discv5ConfigBuilder, Discv5Event, Enr, ListenConfig};
 use serde::{Deserialize, Serialize};
-use std::net::Ipv4Addr;
 use std::time::Duration;
 use testground::client::Client;
 use tokio::{sync, task};
@@ -51,11 +50,10 @@ pub(super) async fn run(client: Client) -> Result<(), Box<dyn std::error::Error>
     // //////////////////////////////////////////////////////////////
     // Start Discovery v5 server
     // //////////////////////////////////////////////////////////////
-    let listen_config = ListenConfig::new_ipv4(Ipv4Addr::UNSPECIFIED, 9000);
     let mut discv5: Discv5 = Discv5::new(
         enr,
         enr_key,
-        Discv5ConfigBuilder::new(listen_config)
+        Discv5ConfigBuilder::new(ListenConfig::default())
             .ping_interval(Duration::from_secs(params.ping_interval))
             .build(),
     )?;
