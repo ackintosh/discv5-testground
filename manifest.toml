@@ -31,9 +31,9 @@ instances = { min = 20, max = 20, default = 20 }
   # Params for the `victim` group
   incoming_bucket_limit = { type = "int", desc = "A maximum limit to the number of incoming nodes per bucket.", default = 16 }
 
-# Change IP
+# IP change
 [[testcases]]
-name = "change-ip"
+name = "ip-change"
 instances = { min = 3, max = 100, default = 3 }
 
   [testcases.params]

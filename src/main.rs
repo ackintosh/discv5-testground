@@ -1,4 +1,4 @@
-mod change_ip;
+mod ip_change;
 mod eclipse;
 mod find_node;
 mod utils;
@@ -65,7 +65,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .run(client.clone())
                 .await?
         }
-        "change-ip" => change_ip::run(client).await?,
+        "ip-change" => ip_change::run(client).await?,
         _ => unreachable!(),
     };
 

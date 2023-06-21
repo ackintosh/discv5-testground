@@ -1,6 +1,6 @@
 mod params;
 
-use crate::change_ip::params::Params;
+use crate::ip_change::params::Params;
 use crate::utils::publish_and_collect;
 use discv5::enr::{CombinedKey, EnrBuilder};
 use discv5::{Discv5, Discv5ConfigBuilder, Enr, ListenConfig};
@@ -180,7 +180,7 @@ async fn change_ip(
                 duplicate_corr: 0.0,
             },
             rules: None,
-            callback_state: "change_ip".to_owned(),
+            callback_state: "ip_change".to_owned(),
             callback_target: Some(1),
             routing_policy: RoutingPolicyType::DenyAll,
         })
