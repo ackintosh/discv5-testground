@@ -30,3 +30,20 @@ instances = { min = 20, max = 20, default = 20 }
 
   # Params for the `victim` group
   incoming_bucket_limit = { type = "int", desc = "A maximum limit to the number of incoming nodes per bucket.", default = 16 }
+
+# IP change
+[[testcases]]
+name = "ip-change"
+instances = { min = 3, max = 100, default = 3 }
+
+  [testcases.params]
+  latency = { type = "int", desc = "Latency between peers.", unit = "ms", default = 100 }
+
+  # discv5 params
+  vote_duration = { type = "int", desc = "The interval over which votes are remembered when determining our external IP.", unit = "sec", default = 5 }
+  ping_interval = { type = "int", desc = "The time between pings to ensure connectivity amongst connected nodes.", unit = "sec", default = 1 }
+
+  # simulation params
+  duration_before = { type = "int", desc = "Duration to run the simulation before changing IP address.", default = 5, unit="sec" }
+  duration_after = { type = "int", desc = "Duration to run the simulation after changing IP address.", default = 15, unit="sec" }
+
