@@ -1,6 +1,6 @@
-mod ip_change;
 mod eclipse;
 mod find_node;
+mod ip_change;
 mod utils;
 
 use testground::client::Client;
