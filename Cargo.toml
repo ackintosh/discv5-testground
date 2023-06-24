@@ -11,7 +11,9 @@ path = "src/main.rs"
 
 [dependencies]
 chrono = "0.4.26"
-discv5 = { git = "https://github.com/ackintosh/discv5.git", rev = "0b11b6872622437f3b85782bcd6878506fc519ef" }
+# Speed up ENR update
+# https://github.com/sigp/discv5/pull/196
+discv5 = { git = "https://github.com/ackintosh/discv5.git", rev = "3a182d9d8c1c520b518358eec09080408061dbcc" }
 rand_xorshift = "0.3.0"
 serde = "1.0.164"
 serde_json = "1.0.97"
