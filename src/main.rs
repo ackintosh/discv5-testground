@@ -1,6 +1,7 @@
 mod eclipse;
 mod enr_update;
 mod find_node;
+mod ip_change;
 mod utils;
 
 use testground::client::Client;
@@ -66,6 +67,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .await?
         }
         "enr-update" => enr_update::run(client.clone()).await?,
+        "ip-change" => ip_change::run(client).await?,
         _ => unreachable!(),
     };
 
