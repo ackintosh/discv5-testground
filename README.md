@@ -25,6 +25,7 @@ testground run single \
 
 - [find-node](#find-node)
 - [eclipse-attack-monopolizing-by-incoming-nodes](#eclipse-attack-monopolizing-by-incoming-nodes)
+- [enr-update](#enr-update)
 - [ip-change](#ip-change)
 
 ### [`find-node`](#test-cases)
@@ -67,6 +68,40 @@ If you comment out this parameter as follows and run again, the victim node emit
     [groups.run.test_params]
 -    incoming_bucket_limit = "8"
 +    # incoming_bucket_limit = "8"
+```
+
+### [`enr-update`](#test-cases)
+
+```shell
+testground run single \
+  --plan=discv5-testground \
+  --testcase=enr-update \
+  --builder=docker:generic \
+  --runner=local:docker \
+  --instances=11 \
+  --wait \
+  | grep 'The socket has been updated'
+```
+
+```mermaid
+sequenceDiagram
+    participant Node 1
+    participant Node N
+    Note over Node 1: Build ENR<br>*empty socket addresses*
+    Note over Node N: Build ENR<br>IPv4 socket address
+
+    Note over Node 1: Send FINDNODE requests<br>to establish *Outgoing* connections.
+
+    Node 1 ->> Node N: Random packets
+    Note over Node N: No session exists
+    Node N -->> Node 1: WHOAREYOU
+    Node 1 ->> Node N: Handshake Message(FINDNODE)
+    Note over Node 1,Node N: Session established
+    Node N -->> Node 1: NODES
+
+    Node 1 ->> Node N: PING
+    Node N -->> Node 1: PONG
+    Note over Node 1: Update the ENR socket address<br>based on the PONG responses.
 ```
 
 ### [`ip-change`](#test-cases)
