@@ -110,6 +110,7 @@ pub(crate) async fn run(client: Client) -> Result<(), Box<dyn std::error::Error>
     tokio::time::sleep(Duration::from_secs(SESSION_TIMEOUT_NODE2 + 2)).await;
 
     // Send requests in parallel from Node1 to Node2.
+    let mut succeeded = true;
     if instance_info.seq == 1 {
         for p in participants
             .iter()
@@ -122,8 +123,9 @@ pub(crate) async fn run(client: Client) -> Result<(), Box<dyn std::error::Error>
             }
 
             for h in handles {
-                if let Err(e) = h.await {
-                    error!("Failed to join: {e}");
+                if let Err(e) = h.await.unwrap() {
+                    error!("FINDNODE request failed: {e}");
+                    succeeded = false;
                 }
             }
         }
@@ -135,6 +137,14 @@ pub(crate) async fn run(client: Client) -> Result<(), Box<dyn std::error::Error>
         .signal_and_wait(STATE_COMPLETED, run_parameters.test_instance_count)
         .await?;
 
-    client.record_success().await?;
+    if succeeded {
+        client.record_success().await?;
+    } else {
+        client
+            .record_failure(
+                "The requests have resulted in failure. Please check the log for details.",
+            )
+            .await?
+    }
     Ok(())
 }
