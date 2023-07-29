@@ -118,7 +118,7 @@ pub(crate) async fn run(client: Client) -> Result<(), Box<dyn std::error::Error>
             let mut handles = vec![];
             for _ in 0..2 {
                 let fut = discv5.find_node_designated_peer(p.enr.clone(), vec![0]);
-                handles.push(tokio::spawn(async { fut.await }));
+                handles.push(tokio::spawn(fut));
             }
 
             for h in handles {
