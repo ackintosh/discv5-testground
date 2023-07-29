@@ -24,6 +24,6 @@ RUN cd plan && cargo install --locked --path .
 FROM debian:bullseye-slim
 COPY --from=builder /usr/local/cargo/bin/discv5-testground /usr/local/bin/discv5-testground
 
-ENV RUST_LOG=discv5=debug
+ENV RUST_LOG=discv5=trace
 
 ENTRYPOINT ["discv5-testground"]

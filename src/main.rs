@@ -1,3 +1,4 @@
+mod concurrent_requests;
 mod eclipse;
 mod enr_update;
 mod find_node;
@@ -61,6 +62,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // //////////////////////////////////////////////////////////////
     match client.run_parameters().test_case.clone().as_str() {
         "find-node" => find_node::run(client.clone()).await?,
+        "concurrent-requests" => concurrent_requests::run(client).await?,
         "eclipse-attack-monopolizing-by-incoming-nodes" => {
             eclipse::MonopolizingByIncomingNodes::new()
                 .run(client.clone())
