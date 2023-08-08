@@ -1,3 +1,5 @@
+pub(crate) mod whoareyou_timeout;
+
 use crate::utils::publish_and_collect;
 use discv5::enr::{CombinedKey, EnrBuilder};
 use discv5::{Discv5, Discv5ConfigBuilder, Enr, ListenConfig};
