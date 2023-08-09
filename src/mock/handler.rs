@@ -16,25 +16,23 @@ pub(crate) enum HandlerOut {}
 
 pub(crate) struct Handler {
     node_id: NodeId,
-    service_recv: mpsc::UnboundedReceiver<HandlerIn>,
-    service_send: mpsc::Sender<HandlerOut>,
+    from_mock: mpsc::UnboundedReceiver<HandlerIn>,
     socket: Socket,
 }
 
 impl Handler {
     pub(crate) async fn spawn(
         enr: Enr,
-        // key: Arc<RwLock<CombinedKey>>,
         config: Discv5Config,
     ) -> (UnboundedSender<HandlerIn>, Receiver<HandlerOut>) {
-        let (handler_send, service_recv) = mpsc::unbounded_channel();
-        let (service_send, handler_recv) = mpsc::channel(50);
+        let (handler_send, from_mock) = mpsc::unbounded_channel();
+        let (_to_mock, handler_recv) = mpsc::channel(50);
 
         let node_id = enr.node_id();
 
         let socket = Socket::new(
             config.executor.clone().expect("Executor must exist"),
-            node_id.clone(),
+            node_id,
             config.listen_config.clone(),
         )
         .await;
@@ -46,8 +44,7 @@ impl Handler {
             .spawn(Box::pin(async move {
                 let mut handler = Handler {
                     node_id,
-                    service_recv,
-                    service_send,
+                    from_mock,
                     socket,
                 };
 
@@ -60,7 +57,7 @@ impl Handler {
     pub(crate) async fn start(&mut self) {
         loop {
             tokio::select! {
-                Some(handler_request) = self.service_recv.recv() => {
+                Some(handler_request) = self.from_mock.recv() => {
                     self.process_handler_request(handler_request).await;
                 }
                 Some(inbound_packet) = self.socket.recv.recv() => {
