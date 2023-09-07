@@ -13,8 +13,8 @@ path = "src/main.rs"
 chrono = "0.4.26"
 # Speed up ENR update
 # https://github.com/sigp/discv5/commit/a9ded0490229418cb61e747d55d3e0879b62e1d7
-#discv5 = { git = "https://github.com/njgheorghita/discv5.git", rev = "786104dca52be768d085e6bc867797cf45c0b140" }
-discv5 = { git = "https://github.com/ackintosh/discv5.git", rev = "730db0976edcf91a0d3736ca168b358844c9cbe2" }
+discv5 = { git = "https://github.com/njgheorghita/discv5.git", rev = "32b2240a8f6466969aec3215abf62db9edfadb13" }
+#discv5 = { git = "https://github.com/ackintosh/discv5.git", rev = "18892eff6f90d0fb4ac10878999d88492f4f3efc" }
 rand_xorshift = "0.3.0"
 serde = "1.0.175"
 serde_json = "1.0.104"
@@ -23,3 +23,9 @@ tokio = { version = "1.29.0", features = ["macros"] }
 tokio-stream = "0.1.14"
 tracing = "0.1.37"
 tracing-subscriber = "0.3.17"
+
+# *** mock ***
+rand = "0.8.5"
+zeroize = { version = "1.4.3", features = ["zeroize_derive"] }
+# This version must be kept up to date do it uses the same dependencies as ENR
+hkdf = "0.12.3"

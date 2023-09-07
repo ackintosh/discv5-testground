@@ -4,7 +4,7 @@ use crate::enr_update::params::Params;
 use crate::utils::publish_and_collect;
 use chrono::Local;
 use discv5::enr::{CombinedKey, EnrBuilder};
-use discv5::{Discv5, Discv5ConfigBuilder, Discv5Event, Enr, ListenConfig};
+use discv5::{Discv5, Enr, ListenConfig};
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
 use testground::client::Client;
@@ -53,7 +53,7 @@ pub(super) async fn run(client: Client) -> Result<(), Box<dyn std::error::Error>
     let mut discv5: Discv5 = Discv5::new(
         enr,
         enr_key,
-        Discv5ConfigBuilder::new(ListenConfig::default())
+        discv5::ConfigBuilder::new(ListenConfig::default())
             .ping_interval(Duration::from_secs(params.ping_interval))
             .build(),
     )?;
@@ -77,7 +77,7 @@ pub(super) async fn run(client: Client) -> Result<(), Box<dyn std::error::Error>
 
         task::spawn(async move {
             while let Some(event) = event_stream.recv().await {
-                if let Discv5Event::SocketUpdated(socket_addr) = event {
+                if let discv5::Event::SocketUpdated(socket_addr) = event {
                     sender.send(socket_addr).unwrap();
                     break;
                 }

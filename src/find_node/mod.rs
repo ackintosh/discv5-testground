@@ -1,7 +1,7 @@
 use crate::utils::publish_and_collect;
 use chrono::Local;
 use discv5::enr::{CombinedKey, EnrBuilder, NodeId};
-use discv5::{Discv5, Discv5ConfigBuilder, Enr, Key, ListenConfig};
+use discv5::{Discv5, Enr, Key, ListenConfig};
 use serde::{Deserialize, Serialize};
 use testground::client::Client;
 use testground::WriteQuery;
@@ -59,7 +59,7 @@ pub(super) async fn run(client: Client) -> Result<(), Box<dyn std::error::Error>
     let mut discv5: Discv5 = Discv5::new(
         enr,
         enr_key,
-        Discv5ConfigBuilder::new(ListenConfig::default()).build(),
+        discv5::ConfigBuilder::new(ListenConfig::default()).build(),
     )?;
     discv5.start().await.expect("Start Discovery v5 server");
 

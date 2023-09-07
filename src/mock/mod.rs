@@ -1,11 +1,38 @@
 mod handler;
 mod socket;
+mod session;
+mod crypto;
 
 use crate::mock::handler::{Handler, HandlerIn};
 use discv5::handler::NodeContact;
-use discv5::{Discv5Config, Enr, IpMode};
+use discv5::{Enr, IpMode};
+use std::collections::VecDeque;
+use discv5::enr::CombinedKey;
 use tokio::sync::mpsc;
 use tracing::info;
+
+pub struct Behaviour {
+    pub expect: Expect,
+    pub action: Action,
+}
+
+#[derive(Debug)]
+pub enum Expect {
+    WhoAreYou,
+    MessageWithoutSession,
+    Handshake(Request),
+}
+
+#[derive(Debug)]
+pub enum Request {
+    FINDNODE,
+}
+
+pub enum Action {
+    Ignore(String),
+    SendWhoAreYou,
+    EstablishSession(Box<Action>),
+}
 
 pub(crate) struct Mock {
     /// The channel to send messages to the handler.
@@ -13,8 +40,13 @@ pub(crate) struct Mock {
 }
 
 impl Mock {
-    pub(crate) async fn start(enr: Enr, config: Discv5Config) -> Self {
-        let (to_handler, _from_handler) = Handler::spawn(enr, config).await;
+    pub(crate) async fn start(
+        enr: Enr,
+        enr_key: CombinedKey,
+        config: discv5::Config,
+        behaviours: VecDeque<Behaviour>,
+    ) -> Self {
+        let (to_handler, _from_handler) = Handler::spawn(enr, enr_key, config, behaviours).await;
 
         Mock { to_handler }
     }

@@ -67,6 +67,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         "concurrent-requests_whoareyou-timeout" => {
             concurrent_requests::whoareyou_timeout::run(client).await?
         }
+        "concurrent-requests_before-establishing-session" => {
+            concurrent_requests::before_establishing_session::run(client).await?
+        }
         "eclipse-attack-monopolizing-by-incoming-nodes" => {
             eclipse::MonopolizingByIncomingNodes::new()
                 .run(client.clone())

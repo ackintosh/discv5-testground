@@ -1,8 +1,9 @@
 pub(crate) mod whoareyou_timeout;
+pub(crate) mod before_establishing_session;
 
 use crate::utils::publish_and_collect;
 use discv5::enr::{CombinedKey, EnrBuilder};
-use discv5::{Discv5, Discv5ConfigBuilder, Enr, ListenConfig};
+use discv5::{Discv5, Enr, ListenConfig};
 use serde::{Deserialize, Serialize};
 use std::net::Ipv4Addr;
 use std::time::Duration;
@@ -47,11 +48,11 @@ pub(crate) async fn run(client: Client) -> Result<(), Box<dyn std::error::Error>
     };
 
     let config = if client.global_seq() == 2 {
-        Discv5ConfigBuilder::new(listen_config)
+        discv5::ConfigBuilder::new(listen_config)
             .session_timeout(Duration::from_secs(SESSION_TIMEOUT_NODE2))
             .build()
     } else {
-        Discv5ConfigBuilder::new(listen_config).build()
+        discv5::ConfigBuilder::new(listen_config).build()
     };
 
     let mut discv5: Discv5 = Discv5::new(enr.clone(), enr_key, config)?;

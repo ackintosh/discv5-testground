@@ -1,8 +1,9 @@
 use crate::concurrent_requests::InstanceInfo;
-use crate::mock::Mock;
+use crate::mock::{Action, Behaviour, Expect, Mock, Request};
 use crate::utils::publish_and_collect;
 use discv5::enr::{CombinedKey, EnrBuilder};
-use discv5::{Discv5, Discv5Config, Discv5ConfigBuilder, Enr, ListenConfig};
+use discv5::{Discv5, Enr, ListenConfig};
+use std::collections::VecDeque;
 use std::net::Ipv4Addr;
 use std::time::Duration;
 use testground::client::Client;
@@ -62,13 +63,13 @@ pub(crate) async fn run(client: Client) -> Result<(), Box<dyn std::error::Error>
         ip: Ipv4Addr::UNSPECIFIED,
         port: 9000,
     };
-    let config = Discv5ConfigBuilder::new(listen_config)
+    let config = discv5::ConfigBuilder::new(listen_config)
         .request_timeout(Duration::from_secs(5))
         .build();
 
     match client.global_seq() {
         1 => run_discv5(client, enr, enr_key, config, another_instance_info).await?,
-        2 => run_mock(client, enr, config, another_instance_info).await?,
+        2 => run_mock(client, enr, enr_key, config, another_instance_info).await?,
         _ => unreachable!(),
     }
 
@@ -79,7 +80,7 @@ async fn run_discv5(
     client: Client,
     enr: Enr,
     enr_key: CombinedKey,
-    config: Discv5Config,
+    config: discv5::Config,
     another_instance_info: InstanceInfo,
 ) -> Result<(), Box<dyn std::error::Error>> {
     // ////////////////////////
@@ -127,13 +128,32 @@ async fn run_discv5(
 async fn run_mock(
     client: Client,
     enr: Enr,
-    config: Discv5Config,
+    enr_key: CombinedKey,
+    config: discv5::Config,
     another_instance_info: InstanceInfo,
 ) -> Result<(), Box<dyn std::error::Error>> {
     // ////////////////////////
     // Start mock
     // ////////////////////////
-    let mut mock = Mock::start(enr, config).await;
+    let mut behaviours = VecDeque::new();
+    behaviours.push_back(Behaviour {
+        expect: Expect::WhoAreYou,
+        action: Action::Ignore("Ingore WHOAREYOU packet to make happen a challenge timeout on Node1 side.".to_string()),
+    });
+    behaviours.push_back(Behaviour {
+        expect: Expect::MessageWithoutSession,
+        action: Action::SendWhoAreYou,
+    });
+    behaviours.push_back(Behaviour {
+        expect: Expect::MessageWithoutSession,
+        action: Action::Ignore("WHOAREYOU packet already sent.".to_string()),
+    });
+    behaviours.push_back(Behaviour {
+        expect: Expect::Handshake(Request::FINDNODE),
+        action: Action::EstablishSession(Box::new(Action::Ignore("todo".to_string()))),
+    });
+    // TODO: handle PING request
+    let mut mock = Mock::start(enr, enr_key, config, behaviours).await;
 
     client
         .signal_and_wait(

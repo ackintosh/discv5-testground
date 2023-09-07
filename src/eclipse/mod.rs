@@ -2,7 +2,7 @@ use crate::utils::publish_and_collect;
 use discv5::enr::k256::elliptic_curve::rand_core::RngCore;
 use discv5::enr::k256::elliptic_curve::rand_core::SeedableRng;
 use discv5::enr::{CombinedKey, EnrBuilder, NodeId};
-use discv5::{enr, Discv5, Discv5ConfigBuilder, Enr, ListenConfig};
+use discv5::{enr, Discv5, Enr, ListenConfig};
 use serde::{Deserialize, Serialize};
 use std::u64;
 use testground::client::Client;
@@ -70,7 +70,7 @@ impl MonopolizingByIncomingNodes {
         // //////////////////////////////////////////////////////////////
         // Start Discovery v5 server
         // //////////////////////////////////////////////////////////////
-        let discv5_config = Discv5ConfigBuilder::new(ListenConfig::default())
+        let discv5_config = discv5::ConfigBuilder::new(ListenConfig::default())
             .incoming_bucket_limit(
                 run_parameters
                     .test_instance_params
