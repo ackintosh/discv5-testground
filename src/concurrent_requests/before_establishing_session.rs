@@ -126,5 +126,6 @@ pub(crate) async fn run(client: Client) -> Result<(), Box<dyn std::error::Error>
         .signal_and_wait(STATE_FINISHED, client.run_parameters().test_instance_count)
         .await?;
 
+    client.record_success().await?;
     Ok(())
 }
