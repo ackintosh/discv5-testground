@@ -1,5 +1,5 @@
-use discv5::enr::{CombinedKey, k256, NodeId};
 use discv5::enr::k256::sha2::Sha256;
+use discv5::enr::{k256, CombinedKey, NodeId};
 use discv5::packet::ChallengeData;
 use hkdf::Hkdf;
 

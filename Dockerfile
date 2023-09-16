@@ -8,7 +8,7 @@ RUN mkdir -p ./plan/src/
 RUN echo "fn main() { println!(\"If you see this message, you may want to clean up the target directory or the Docker build cache.\") }" > ./plan/src/main.rs
 COPY ./plan/Cargo.lock ./plan/
 COPY ./plan/Cargo.toml ./plan/
-RUN cd ./plan/ && cargo build --release
+RUN cd ./plan/ && cargo build
 
 COPY . .
 

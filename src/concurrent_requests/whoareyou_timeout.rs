@@ -138,7 +138,9 @@ async fn run_mock(
     let mut behaviours = VecDeque::new();
     behaviours.push_back(Behaviour {
         expect: Expect::WhoAreYou,
-        action: Action::Ignore("Ingore WHOAREYOU packet to make happen a challenge timeout on Node1 side.".to_string()),
+        action: Action::Ignore(
+            "Ingore WHOAREYOU packet to make happen a challenge timeout on Node1 side.".to_string(),
+        ),
     });
     behaviours.push_back(Behaviour {
         expect: Expect::MessageWithoutSession,

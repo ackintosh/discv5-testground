@@ -1,5 +1,5 @@
-pub(crate) mod whoareyou_timeout;
 pub(crate) mod before_establishing_session;
+pub(crate) mod whoareyou_timeout;
 
 use crate::utils::publish_and_collect;
 use discv5::enr::{CombinedKey, EnrBuilder};

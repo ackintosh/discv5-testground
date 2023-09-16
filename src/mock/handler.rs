@@ -1,3 +1,4 @@
+use crate::mock::session::Session;
 use crate::mock::socket::Socket;
 use crate::mock::{Action, Behaviour, Expect};
 use discv5::enr::{CombinedKey, NodeId};
@@ -9,7 +10,6 @@ use std::collections::{HashMap, VecDeque};
 use tokio::sync::mpsc;
 use tokio::sync::mpsc::{Receiver, UnboundedSender};
 use tracing::{info, warn};
-use crate::mock::session::Session;
 
 #[derive(Debug)]
 /// A Challenge (WHOAREYOU) object used to handle and send WHOAREYOU requests.
@@ -33,6 +33,7 @@ pub(crate) struct Handler {
     socket: Socket,
     behaviours: VecDeque<Behaviour>,
     active_challenges: HashMap<NodeAddress, Challenge>,
+    sessions: HashMap<NodeAddress, ()>,
 }
 
 impl Handler {
@@ -66,6 +67,7 @@ impl Handler {
                     socket,
                     behaviours,
                     active_challenges: HashMap::new(),
+                    sessions: HashMap::new(),
                 };
 
                 handler.start().await;
@@ -108,11 +110,7 @@ impl Handler {
         macro_rules! next_behaviour {
             () => {{
                 self.behaviours.pop_front().expect(
-                    format!(
-                        "No behaviour. inbound_packet:{:?}",
-                        inbound_packet_kind
-                    )
-                    .as_str(),
+                    format!("No behaviour. inbound_packet:{:?}", inbound_packet_kind).as_str(),
                 )
             }};
         }
@@ -167,7 +165,12 @@ impl Handler {
                             node_id: src_id,
                         };
                         if let Some(challenge) = self.active_challenges.remove(&node_address) {
-                            self.establish_session(node_address, challenge, &ephem_pubkey, enr_record);
+                            self.establish_session(
+                                node_address,
+                                challenge,
+                                &ephem_pubkey,
+                                enr_record,
+                            );
                         } else {
                             panic!("No active challenge");
                         }
@@ -178,8 +181,15 @@ impl Handler {
                 let behaviour = next_behaviour!();
                 match behaviour.expect {
                     Expect::MessageWithoutSession => {
+                        let node_address = NodeAddress {
+                            socket_addr: inbound_packet.src_address,
+                            node_id: src_id,
+                        };
+                        // Check session existence
+                        if self.sessions.contains_key(&node_address) {
+                            panic!("Unexpected inbound packet. expected:MessageWithoutSession, actual:SessionExists");
+                        }
                         info!("Received Message without session.");
-                        // TODO: check session existence
                     }
                     _ => panic!(
                         "Unexpected inbound packet. expected:{:?}, actual:{:?}",
@@ -223,7 +233,13 @@ impl Handler {
 
         info!("Sending WHOAREYOU to {}", node_address);
         self.send(node_address.clone(), packet).await;
-        if let Some(_) = self.active_challenges.insert(node_address, Challenge { data: challenge_data, remote_enr: None }) {
+        if let Some(_) = self.active_challenges.insert(
+            node_address,
+            Challenge {
+                data: challenge_data,
+                remote_enr: None,
+            },
+        ) {
             panic!("Unexpected call for send_challenge()");
         }
     }
@@ -236,7 +252,13 @@ impl Handler {
         self.socket.send.send(outbound_packet).await.unwrap();
     }
 
-    async fn establish_session(&mut self, node_address: NodeAddress, challenge: Challenge, ephem_pubkey: &[u8], enr_record: Option<Enr>) {
+    async fn establish_session(
+        &mut self,
+        node_address: NodeAddress,
+        challenge: Challenge,
+        ephem_pubkey: &[u8],
+        enr_record: Option<Enr>,
+    ) {
         match Session::establish_from_challenge(
             &self.local_key,
             &self.node_id,

@@ -1,8 +1,8 @@
-use discv5::Enr;
-use discv5::enr::{CombinedKey, NodeId};
-use zeroize::Zeroize;
 use crate::mock::crypto::derive_keys_from_pubkey;
 use crate::mock::handler::Challenge;
+use discv5::enr::{CombinedKey, NodeId};
+use discv5::Enr;
+use zeroize::Zeroize;
 
 #[derive(Zeroize, PartialEq)]
 pub(crate) struct Keys {

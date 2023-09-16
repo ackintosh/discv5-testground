@@ -1,15 +1,23 @@
-use crate::concurrent_requests::InstanceInfo;
+use crate::mock::{Action, Behaviour, Expect, Mock};
 use crate::utils::publish_and_collect;
 use discv5::enr::{CombinedKey, EnrBuilder};
-use discv5::{Discv5, ListenConfig, RequestError};
+use discv5::{Discv5, Enr, ListenConfig};
+use serde::{Deserialize, Serialize};
+use std::collections::VecDeque;
 use std::net::Ipv4Addr;
 use std::time::Duration;
 use testground::client::Client;
-use tokio::sync::mpsc::Receiver;
-use tracing::{error, info};
+use tracing::error;
 
 const STATE_DISCV5_STARTED: &str = "state_discv5_started";
 const STATE_FINISHED: &str = "state_finished";
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+struct InstanceInfo {
+    // The sequence number of this test instance within the test.
+    seq: u64,
+    enr: Enr,
+}
 
 pub(crate) async fn run(client: Client) -> Result<(), Box<dyn std::error::Error>> {
     let run_parameters = client.run_parameters();
@@ -62,9 +70,25 @@ pub(crate) async fn run(client: Client) -> Result<(), Box<dyn std::error::Error>
         port: 9000,
     };
     let config = discv5::ConfigBuilder::new(listen_config)
-        .request_timeout(Duration::from_secs(5))
+        .request_timeout(Duration::from_secs(3))
         .build();
 
+    match client.global_seq() {
+        1 => run_discv5(client, enr, enr_key, config, another_instance_info).await?,
+        2 => run_mock(client, enr, enr_key, config).await?,
+        _ => unreachable!(),
+    }
+
+    Ok(())
+}
+
+async fn run_discv5(
+    client: Client,
+    enr: Enr,
+    enr_key: CombinedKey,
+    config: discv5::Config,
+    another_instance_info: InstanceInfo,
+) -> Result<(), Box<dyn std::error::Error>> {
     // ////////////////////////
     // Start discv5
     // ////////////////////////
@@ -78,49 +102,45 @@ pub(crate) async fn run(client: Client) -> Result<(), Box<dyn std::error::Error>
         )
         .await?;
 
-    match client.global_seq() {
-        1 => {
-            // Sent requests in parallel.
-            let mut handles = vec![];
-            for i in 0..2 {
-                let fut = discv5.talk_req(another_instance_info.enr.clone(), vec![0], vec![i]);
-                handles.push(tokio::spawn(fut));
-            }
+    let result = discv5
+        .find_node_designated_peer(another_instance_info.enr.clone(), vec![0])
+        .await;
 
-            for h in handles {
-                match h.await.unwrap() {
-                    Ok(res) => info!("Response: {:?}", res),
-                    Err(e) => error!("Request failed: {e}"),
-                }
-            }
-        }
-        2 => {
-            let mut req_count = 0;
-            let mut event = discv5.event_stream().await.expect("event stream");
-            while let Some(ev) = event.recv().await {
-                match ev {
-                    discv5::Event::Discovered(_) => {}
-                    discv5::Event::EnrAdded { .. } => {}
-                    discv5::Event::NodeInserted { .. } => {}
-                    discv5::Event::SessionEstablished(_, _) => {}
-                    discv5::Event::SocketUpdated(_) => {}
-                    discv5::Event::TalkRequest(mut req) => {
-                        req_count += 1;
-                        info!("TalkRequest: {:?}", req);
-                        let response = req.body().to_vec();
-                        if let Err(e) = req.respond(response) {
-                            error!("Failed to send response: {:?}", e);
-                        }
+    client
+        .signal_and_wait(STATE_FINISHED, client.run_parameters().test_instance_count)
+        .await?;
 
-                        if req_count == 2 {
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-        _ => unreachable!(),
+    println!("result: {result:?}");
+    if result.is_err() {
+        client.record_success().await?;
+    } else {
+        client.record_failure("the request succeeded.")
     }
+    Ok(())
+}
+
+async fn run_mock(
+    client: Client,
+    enr: Enr,
+    enr_key: CombinedKey,
+    config: discv5::Config,
+) -> Result<(), Box<dyn std::error::Error>> {
+    // ////////////////////////
+    // Start mock
+    // ////////////////////////
+    let mut behaviours = VecDeque::new();
+    behaviours.push_back(Behaviour {
+        expect: Expect::MessageWithoutSession,
+        action: Action::Ignore("Ignoring a message".to_string()),
+    });
+    let mut _mock = Mock::start(enr, enr_key, config, behaviours).await;
+
+    client
+        .signal_and_wait(
+            STATE_DISCV5_STARTED,
+            client.run_parameters().test_instance_count,
+        )
+        .await?;
 
     client
         .signal_and_wait(STATE_FINISHED, client.run_parameters().test_instance_count)

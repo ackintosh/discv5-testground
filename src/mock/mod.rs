@@ -1,13 +1,13 @@
-mod handler;
-mod socket;
-mod session;
 mod crypto;
+mod handler;
+mod session;
+mod socket;
 
 use crate::mock::handler::{Handler, HandlerIn};
+use discv5::enr::CombinedKey;
 use discv5::handler::NodeContact;
 use discv5::{Enr, IpMode};
 use std::collections::VecDeque;
-use discv5::enr::CombinedKey;
 use tokio::sync::mpsc;
 use tracing::info;
 
