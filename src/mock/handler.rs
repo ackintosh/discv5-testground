@@ -1,12 +1,14 @@
 use crate::mock::session::Session;
 use crate::mock::socket::Socket;
-use crate::mock::{Action, Behaviour, Expect};
+use crate::mock::{Action, Behaviour, Expect, Request};
 use discv5::enr::{CombinedKey, NodeId};
 use discv5::handler::{NodeAddress, NodeContact};
 use discv5::packet::{ChallengeData, IdNonce, MessageNonce, Packet, PacketKind};
+use discv5::rpc::{Message, RequestBody, Response};
 use discv5::socket::{InboundPacket, OutboundPacket};
-use discv5::{DefaultProtocolId, Enr};
+use discv5::{DefaultProtocolId, Enr, ListenConfig};
 use std::collections::{HashMap, VecDeque};
+use std::net::IpAddr;
 use tokio::sync::mpsc;
 use tokio::sync::mpsc::{Receiver, UnboundedSender};
 use tracing::{info, warn};
@@ -33,7 +35,8 @@ pub(crate) struct Handler {
     socket: Socket,
     behaviours: VecDeque<Behaviour>,
     active_challenges: HashMap<NodeAddress, Challenge>,
-    sessions: HashMap<NodeAddress, ()>,
+    sessions: HashMap<NodeAddress, Session>,
+    listen_config: ListenConfig,
 }
 
 impl Handler {
@@ -68,6 +71,7 @@ impl Handler {
                     behaviours,
                     active_challenges: HashMap::new(),
                     sessions: HashMap::new(),
+                    listen_config: config.listen_config.clone(),
                 };
 
                 handler.start().await;
@@ -159,7 +163,6 @@ impl Handler {
                     Action::Ignore(_) => todo!(),
                     Action::SendWhoAreYou => unreachable!(),
                     Action::EstablishSession(next_action) => {
-                        info!("TODO: establish session");
                         let node_address = NodeAddress {
                             socket_addr: inbound_packet.src_address,
                             node_id: src_id,
@@ -170,7 +173,14 @@ impl Handler {
                                 challenge,
                                 &ephem_pubkey,
                                 enr_record,
-                            );
+                            )
+                            .await;
+
+                            match next_action.as_ref() {
+                                Action::Ignore(_) => {}
+                                Action::SendWhoAreYou => {}
+                                Action::EstablishSession(_) => {}
+                            }
                         } else {
                             panic!("No active challenge");
                         }
@@ -178,18 +188,62 @@ impl Handler {
                 }
             }
             PacketKind::Message { src_id } => {
+                let node_address = NodeAddress {
+                    socket_addr: inbound_packet.src_address,
+                    node_id: src_id,
+                };
                 let behaviour = next_behaviour!();
                 match behaviour.expect {
                     Expect::MessageWithoutSession => {
-                        let node_address = NodeAddress {
-                            socket_addr: inbound_packet.src_address,
-                            node_id: src_id,
-                        };
                         // Check session existence
                         if self.sessions.contains_key(&node_address) {
                             panic!("Unexpected inbound packet. expected:MessageWithoutSession, actual:SessionExists");
                         }
                         info!("Received Message without session.");
+                    }
+                    Expect::Message(expected_request) => {
+                        // Check if we have a session.
+                        if let Some(session) = self.sessions.get(&node_address) {
+                            // Decrypt the message
+                            let message = session
+                                .decrypt_message(
+                                    inbound_packet.header.message_nonce,
+                                    &inbound_packet.message,
+                                    &inbound_packet.authenticated_data,
+                                )
+                                .expect("Decrypt message");
+                            let message = Message::decode(&message).unwrap();
+                            match message {
+                                Message::Request(request) => {
+                                    if !check_request_kind(&request, &expected_request) {
+                                        panic!("Unexpected request. {:?}", request);
+                                    }
+
+                                    match request.body {
+                                        RequestBody::Ping { .. } => {
+                                            let (ip, port) = self.ip_port();
+                                            self.send_response(node_address, Response {
+                                                id: request.id,
+                                                body: discv5::rpc::ResponseBody::Pong {
+                                                    enr_seq: 1,
+                                                    ip,
+                                                    port,
+                                                },
+                                            }).await;
+                                        }
+                                        RequestBody::FindNode { .. } => todo!(),
+                                        RequestBody::Talk { .. } => todo!(),
+                                    }
+                                }
+                                Message::Response(_) => todo!(),
+                            }
+                            match expected_request {
+                                Request::FINDNODE => todo!(),
+                                Request::Ping => todo!(),
+                            }
+                        } else {
+                            panic!("Session does not exist.")
+                        }
                     }
                     _ => panic!(
                         "Unexpected inbound packet. expected:{:?}, actual:{:?}",
@@ -209,24 +263,13 @@ impl Handler {
                     }
                     Action::EstablishSession(_) => unreachable!(),
                 }
-                // let node_address = NodeAddress {
-                //     socket_addr: inbound_packet.src_address,
-                //     node_id: src_id,
-                // };
-                // self.handle_message(
-                //     node_address,
-                //     message_nonce,
-                //     &inbound_packet.message,
-                //     &inbound_packet.authenticated_data,
-                // )
-                //     .await
             }
         }
     }
 
     async fn send_challenge(&mut self, node_address: NodeAddress, message_nonce: MessageNonce) {
         let id_nonce: IdNonce = rand::random();
-        let packet = Packet::new_whoareyou(message_nonce, id_nonce, 1);
+        let packet = Packet::new_whoareyou(message_nonce, id_nonce, 0);
         let challenge_data =
             ChallengeData::try_from(packet.authenticated_data::<DefaultProtocolId>().as_slice())
                 .expect("Must be the correct challenge size");
@@ -241,6 +284,22 @@ impl Handler {
             },
         ) {
             panic!("Unexpected call for send_challenge()");
+        }
+    }
+
+    async fn send_response(&mut self, node_address: NodeAddress, response: Response) {
+        let packet = if let Some(session) = self.sessions.get_mut(&node_address) {
+            session.encrypt_message(self.node_id, &response.encode())
+        } else {
+            return warn!(
+                "Session is not established. Dropping response {} for node: {}",
+                response, node_address.node_id
+            );
+        };
+
+        match packet {
+            Ok(packet) => self.send(node_address, packet).await,
+            Err(e) => warn!("Could not encrypt response: {:?}", e),
         }
     }
 
@@ -267,8 +326,34 @@ impl Handler {
             ephem_pubkey,
             enr_record,
         ) {
-            Ok(_) => {}
-            Err(_) => {}
+            Ok((session, _enr)) => {
+                self.sessions.insert(node_address, session);
+            }
+            Err(error) => panic!("{}", error),
+        }
+
+        info!("Session established.");
+    }
+
+    fn ip_port(&self) -> (IpAddr, u16) {
+        match &self.listen_config {
+            ListenConfig::Ipv4 { ip, port } => {
+                (IpAddr::from(ip.clone()), *port)
+            }
+            ListenConfig::Ipv6 { .. } => unreachable!(),
+            ListenConfig::DualStack { .. } => unreachable!(),
+        }
+    }
+}
+
+fn check_request_kind(request: &discv5::rpc::Request, expected: &Request) -> bool {
+    match expected {
+        Request::FINDNODE => todo!(),
+        Request::Ping => {
+            match request.body {
+                RequestBody::Ping { .. } => true,
+                _ => false,
+            }
         }
     }
 }

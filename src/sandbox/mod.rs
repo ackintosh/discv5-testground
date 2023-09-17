@@ -1,4 +1,4 @@
-use crate::mock::{Action, Behaviour, Expect, Mock};
+use crate::mock::{Action, Behaviour, Expect, Mock, Request};
 use crate::utils::publish_and_collect;
 use discv5::enr::{CombinedKey, EnrBuilder};
 use discv5::{Discv5, Enr, ListenConfig};
@@ -114,7 +114,7 @@ async fn run_discv5(
     if result.is_err() {
         client.record_success().await?;
     } else {
-        client.record_failure("the request succeeded.")
+        client.record_failure("the request succeeded.").await?;
     }
     Ok(())
 }
@@ -131,7 +131,15 @@ async fn run_mock(
     let mut behaviours = VecDeque::new();
     behaviours.push_back(Behaviour {
         expect: Expect::MessageWithoutSession,
-        action: Action::Ignore("Ignoring a message".to_string()),
+        action: Action::SendWhoAreYou,
+    });
+    behaviours.push_back(Behaviour {
+        expect: Expect::Handshake(Request::FINDNODE),
+        action: Action::EstablishSession(Box::new(Action::Ignore("test".to_string()))), // TODO
+    });
+    behaviours.push_back(Behaviour {
+        expect: Expect::Message(Request::Ping),
+        action: Action::EstablishSession(Box::new(Action::Ignore("test".to_string()))), // TODO
     });
     let mut _mock = Mock::start(enr, enr_key, config, behaviours).await;
 

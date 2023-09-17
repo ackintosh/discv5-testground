@@ -428,7 +428,7 @@ dependencies = [
 [[package]]
 name = "discv5"
 version = "0.3.1"
-source = "git+https://github.com/njgheorghita/discv5.git?rev=09262ead2882e062de1a6a45df9ea61917eb8465#09262ead2882e062de1a6a45df9ea61917eb8465"
+source = "git+https://github.com/ackintosh/discv5.git?rev=337be4b135cd8ddd71a081d37bcba19c8cfe6342#337be4b135cd8ddd71a081d37bcba19c8cfe6342"
 dependencies = [
  "aes",
  "aes-gcm",
@@ -459,8 +459,10 @@ dependencies = [
 name = "discv5-testground"
 version = "0.1.0"
 dependencies = [
+ "aes-gcm",
  "chrono",
  "discv5",
+ "enr",
  "hkdf",
  "rand",
  "rand_xorshift",

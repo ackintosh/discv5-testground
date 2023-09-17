@@ -1,13 +1,15 @@
 mod crypto;
+mod ecdh;
 mod handler;
 mod session;
 mod socket;
 
 use crate::mock::handler::{Handler, HandlerIn};
+use crate::mock::session::Session;
 use discv5::enr::CombinedKey;
-use discv5::handler::NodeContact;
+use discv5::handler::{NodeAddress, NodeContact};
 use discv5::{Enr, IpMode};
-use std::collections::VecDeque;
+use std::collections::{HashMap, VecDeque};
 use tokio::sync::mpsc;
 use tracing::info;
 
@@ -21,11 +23,13 @@ pub enum Expect {
     WhoAreYou,
     MessageWithoutSession,
     Handshake(Request),
+    Message(Request),
 }
 
 #[derive(Debug)]
 pub enum Request {
     FINDNODE,
+    Ping,
 }
 
 pub enum Action {

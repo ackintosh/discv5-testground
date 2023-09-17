@@ -1,6 +1,10 @@
+use crate::mock::ecdh::ecdh;
+use aes_gcm::aead::generic_array::GenericArray;
+use aes_gcm::aead::{Aead, NewAead, Payload};
+use aes_gcm::Aes128Gcm;
 use discv5::enr::k256::sha2::Sha256;
 use discv5::enr::{k256, CombinedKey, NodeId};
-use discv5::packet::ChallengeData;
+use discv5::packet::{ChallengeData, MessageNonce};
 use hkdf::Hkdf;
 
 const NODE_ID_LENGTH: usize = 32;
@@ -19,22 +23,22 @@ pub(crate) fn derive_keys_from_pubkey(
     challenge_data: &ChallengeData,
     ephem_pubkey: &[u8],
 ) -> Result<(Key, Key), String> {
-    todo!()
-    // let secret = {
-    //     match local_key {
-    //         CombinedKey::Secp256k1(key) => {
-    //             // convert remote pubkey into secp256k1 public key
-    //             // the key type should match our own node record
-    //             todo!();
-    //             // let remote_pubkey = k256::ecdsa::VerifyingKey::from_sec1_bytes(ephem_pubkey)
-    //             //     .map_err(|_| "Error::InvalidRemotePublicKey".to_string())?;
-    //             // ecdh(&remote_pubkey, key)
-    //         }
-    //         CombinedKey::Ed25519(_) => return Err("Error::KeyTypeNotSupported(Ed25519)".to_string()),
-    //     }
-    // };
-    //
-    // derive_key(&secret, remote_id, local_id, challenge_data)
+    let secret = {
+        match local_key {
+            CombinedKey::Secp256k1(key) => {
+                // convert remote pubkey into secp256k1 public key
+                // the key type should match our own node record
+                let remote_pubkey = k256::ecdsa::VerifyingKey::from_sec1_bytes(ephem_pubkey)
+                    .map_err(|_| "Error::InvalidRemotePublicKey".to_string())?;
+                ecdh(&remote_pubkey, key)
+            }
+            CombinedKey::Ed25519(_) => {
+                return Err("Error::KeyTypeNotSupported(Ed25519)".to_string())
+            }
+        }
+    };
+
+    derive_key(&secret, remote_id, local_id, challenge_data)
 }
 
 fn derive_key(
@@ -60,4 +64,32 @@ fn derive_key(
     recipient_key.copy_from_slice(&okm[KEY_LENGTH..2 * KEY_LENGTH]);
 
     Ok((initiator_key, recipient_key))
+}
+
+pub(crate) fn encrypt_message(
+    key: &Key,
+    message_nonce: MessageNonce,
+    msg: &[u8],
+    aad: &[u8],
+) -> Result<Vec<u8>, String> {
+    let aead = Aes128Gcm::new(GenericArray::from_slice(key));
+    let payload = Payload { msg, aad };
+    aead.encrypt(GenericArray::from_slice(&message_nonce), payload)
+        .map_err(|e| e.to_string())
+}
+
+pub(crate) fn decrypt_message(
+    key: &Key,
+    message_nonce: MessageNonce,
+    msg: &[u8],
+    aad: &[u8],
+) -> Result<Vec<u8>, String> {
+    if msg.len() < 16 {
+        return Err("Message not long enough to contain a MAC".to_string());
+    }
+
+    let aead = Aes128Gcm::new(GenericArray::from_slice(key));
+    let payload = Payload { msg, aad };
+    aead.decrypt(GenericArray::from_slice(&message_nonce), payload)
+        .map_err(|e| e.to_string())
 }
