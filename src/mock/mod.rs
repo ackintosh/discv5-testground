@@ -36,6 +36,22 @@ pub enum Action {
     Ignore(String),
     SendWhoAreYou,
     EstablishSession(Box<Action>),
+    SendResponse(Response),
+    CaptureRequest,
+}
+
+pub enum Response {
+    Default,
+    Custom(Vec<CustomResponse>),
+}
+
+pub enum CustomResponseId {
+    CapturedRequestId(usize),
+}
+
+pub struct CustomResponse {
+    pub id: CustomResponseId,
+    pub body: discv5::rpc::ResponseBody,
 }
 
 pub(crate) struct Mock {

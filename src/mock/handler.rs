@@ -1,10 +1,11 @@
+use crate::mock;
 use crate::mock::session::Session;
 use crate::mock::socket::Socket;
-use crate::mock::{Action, Behaviour, Expect, Request};
+use crate::mock::{Action, Behaviour, CustomResponse, CustomResponseId, Expect, Request};
 use discv5::enr::{CombinedKey, NodeId};
 use discv5::handler::{NodeAddress, NodeContact};
 use discv5::packet::{ChallengeData, IdNonce, MessageNonce, Packet, PacketKind};
-use discv5::rpc::{Message, RequestBody, Response};
+use discv5::rpc::{Message, RequestBody};
 use discv5::socket::{InboundPacket, OutboundPacket};
 use discv5::{DefaultProtocolId, Enr, ListenConfig};
 use std::collections::{HashMap, VecDeque};
@@ -29,6 +30,7 @@ pub(crate) enum HandlerIn {
 pub(crate) enum HandlerOut {}
 
 pub(crate) struct Handler {
+    enr: Enr,
     local_key: CombinedKey,
     node_id: NodeId,
     from_mock: mpsc::UnboundedReceiver<HandlerIn>,
@@ -36,7 +38,7 @@ pub(crate) struct Handler {
     behaviours: VecDeque<Behaviour>,
     active_challenges: HashMap<NodeAddress, Challenge>,
     sessions: HashMap<NodeAddress, Session>,
-    listen_config: ListenConfig,
+    captured_requests: Vec<discv5::rpc::Request>,
 }
 
 impl Handler {
@@ -64,6 +66,7 @@ impl Handler {
             .expect("Executor must be present")
             .spawn(Box::pin(async move {
                 let mut handler = Handler {
+                    enr,
                     local_key: enr_key,
                     node_id,
                     from_mock,
@@ -71,7 +74,7 @@ impl Handler {
                     behaviours,
                     active_challenges: HashMap::new(),
                     sessions: HashMap::new(),
-                    listen_config: config.listen_config.clone(),
+                    captured_requests: vec![],
                 };
 
                 handler.start().await;
@@ -119,7 +122,7 @@ impl Handler {
             }};
         }
 
-        match inbound_packet.header.kind {
+        match inbound_packet.header.kind.clone() {
             PacketKind::WhoAreYou { id_nonce, .. } => {
                 let behaviour = next_behaviour!();
                 match behaviour.expect {
@@ -139,6 +142,8 @@ impl Handler {
                     ),
                     Action::SendWhoAreYou => unreachable!(),
                     Action::EstablishSession(_) => unreachable!(),
+                    Action::SendResponse(_) => unreachable!(),
+                    Action::CaptureRequest => unreachable!(),
                 }
             }
             PacketKind::Handshake {
@@ -169,7 +174,7 @@ impl Handler {
                         };
                         if let Some(challenge) = self.active_challenges.remove(&node_address) {
                             self.establish_session(
-                                node_address,
+                                node_address.clone(),
                                 challenge,
                                 &ephem_pubkey,
                                 enr_record,
@@ -180,11 +185,27 @@ impl Handler {
                                 Action::Ignore(_) => {}
                                 Action::SendWhoAreYou => {}
                                 Action::EstablishSession(_) => {}
+                                Action::SendResponse(_) => {}
+                                Action::CaptureRequest => {
+                                    if let Some(session) = self.sessions.get(&node_address) {
+                                        let message = decode_message(session, &inbound_packet);
+                                        match message {
+                                            Message::Request(request) => {
+                                                self.captured_requests.push(request);
+                                            }
+                                            Message::Response(_) => unreachable!(),
+                                        }
+                                    } else {
+                                        panic!("Session does not exist.")
+                                    }
+                                }
                             }
                         } else {
                             panic!("No active challenge");
                         }
                     }
+                    Action::SendResponse(_) => unreachable!(),
+                    Action::CaptureRequest => unreachable!(),
                 }
             }
             PacketKind::Message { src_id } => {
@@ -193,6 +214,9 @@ impl Handler {
                     node_id: src_id,
                 };
                 let behaviour = next_behaviour!();
+
+                // Expect
+                let mut received_request = None;
                 match behaviour.expect {
                     Expect::MessageWithoutSession => {
                         // Check session existence
@@ -204,42 +228,15 @@ impl Handler {
                     Expect::Message(expected_request) => {
                         // Check if we have a session.
                         if let Some(session) = self.sessions.get(&node_address) {
-                            // Decrypt the message
-                            let message = session
-                                .decrypt_message(
-                                    inbound_packet.header.message_nonce,
-                                    &inbound_packet.message,
-                                    &inbound_packet.authenticated_data,
-                                )
-                                .expect("Decrypt message");
-                            let message = Message::decode(&message).unwrap();
-                            match message {
+                            match decode_message(session, &inbound_packet) {
                                 Message::Request(request) => {
                                     if !check_request_kind(&request, &expected_request) {
                                         panic!("Unexpected request. {:?}", request);
                                     }
 
-                                    match request.body {
-                                        RequestBody::Ping { .. } => {
-                                            let (ip, port) = self.ip_port();
-                                            self.send_response(node_address, Response {
-                                                id: request.id,
-                                                body: discv5::rpc::ResponseBody::Pong {
-                                                    enr_seq: 1,
-                                                    ip,
-                                                    port,
-                                                },
-                                            }).await;
-                                        }
-                                        RequestBody::FindNode { .. } => todo!(),
-                                        RequestBody::Talk { .. } => todo!(),
-                                    }
+                                    received_request = Some(request);
                                 }
                                 Message::Response(_) => todo!(),
-                            }
-                            match expected_request {
-                                Request::FINDNODE => todo!(),
-                                Request::Ping => todo!(),
                             }
                         } else {
                             panic!("Session does not exist.")
@@ -251,6 +248,7 @@ impl Handler {
                     ),
                 }
 
+                // Action
                 match behaviour.action {
                     Action::Ignore(reason) => info!("Ignoring Message packet. reason:{}", reason),
                     Action::SendWhoAreYou => {
@@ -262,6 +260,16 @@ impl Handler {
                             .await;
                     }
                     Action::EstablishSession(_) => unreachable!(),
+                    Action::SendResponse(response) => match response {
+                        mock::Response::Default => {
+                            self.send_default_response(node_address, received_request.unwrap())
+                                .await
+                        }
+                        mock::Response::Custom(responses) => {
+                            self.send_custom_responses(node_address, responses).await
+                        }
+                    },
+                    Action::CaptureRequest => todo!(),
                 }
             }
         }
@@ -287,7 +295,7 @@ impl Handler {
         }
     }
 
-    async fn send_response(&mut self, node_address: NodeAddress, response: Response) {
+    async fn send_response(&mut self, node_address: NodeAddress, response: discv5::rpc::Response) {
         let packet = if let Some(session) = self.sessions.get_mut(&node_address) {
             session.encrypt_message(self.node_id, &response.encode())
         } else {
@@ -309,6 +317,50 @@ impl Handler {
             packet,
         };
         self.socket.send.send(outbound_packet).await.unwrap();
+    }
+
+    async fn send_default_response(
+        &mut self,
+        node_address: NodeAddress,
+        request: discv5::rpc::Request,
+    ) {
+        match request.body {
+            RequestBody::Ping { .. } => {
+                self.send_response(
+                    node_address,
+                    discv5::rpc::Response {
+                        id: request.id,
+                        body: discv5::rpc::ResponseBody::Pong {
+                            enr_seq: self.enr.seq(),
+                            ip: IpAddr::from(self.enr.ip4().unwrap()),
+                            port: self.enr.udp4().unwrap(),
+                        },
+                    },
+                )
+                .await;
+            }
+            RequestBody::FindNode { .. } => todo!(),
+            RequestBody::Talk { .. } => todo!(),
+        }
+    }
+
+    async fn send_custom_responses(
+        &mut self,
+        node_address: NodeAddress,
+        responses: Vec<CustomResponse>,
+    ) {
+        for res in responses {
+            let id = match res.id {
+                CustomResponseId::CapturedRequestId(index) => {
+                    self.captured_requests.get(index).unwrap().id.clone()
+                }
+            };
+            self.send_response(
+                node_address.clone(),
+                discv5::rpc::Response { id, body: res.body },
+            )
+            .await;
+        }
     }
 
     async fn establish_session(
@@ -334,26 +386,30 @@ impl Handler {
 
         info!("Session established.");
     }
+}
 
-    fn ip_port(&self) -> (IpAddr, u16) {
-        match &self.listen_config {
-            ListenConfig::Ipv4 { ip, port } => {
-                (IpAddr::from(ip.clone()), *port)
-            }
-            ListenConfig::Ipv6 { .. } => unreachable!(),
-            ListenConfig::DualStack { .. } => unreachable!(),
-        }
-    }
+fn decode_message(session: &Session, inbound_packet: &InboundPacket) -> discv5::rpc::Message {
+    // Decrypt the message
+    let message = session
+        .decrypt_message(
+            inbound_packet.header.message_nonce.clone(),
+            &inbound_packet.message,
+            &inbound_packet.authenticated_data,
+        )
+        .expect("Decrypt message");
+
+    discv5::rpc::Message::decode(&message).unwrap()
 }
 
 fn check_request_kind(request: &discv5::rpc::Request, expected: &Request) -> bool {
     match expected {
-        Request::FINDNODE => todo!(),
-        Request::Ping => {
-            match request.body {
-                RequestBody::Ping { .. } => true,
-                _ => false,
-            }
-        }
+        Request::FINDNODE => match request.body {
+            RequestBody::FindNode { .. } => true,
+            _ => false,
+        },
+        Request::Ping => match request.body {
+            RequestBody::Ping { .. } => true,
+            _ => false,
+        },
     }
 }
