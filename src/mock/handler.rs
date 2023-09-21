@@ -187,17 +187,18 @@ impl Handler {
                                 Action::EstablishSession(_) => {}
                                 Action::SendResponse(_) => {}
                                 Action::CaptureRequest => {
-                                    if let Some(session) = self.sessions.get(&node_address) {
-                                        let message = decode_message(session, &inbound_packet);
-                                        match message {
-                                            Message::Request(request) => {
-                                                self.captured_requests.push(request);
-                                            }
-                                            Message::Response(_) => unreachable!(),
-                                        }
-                                    } else {
-                                        panic!("Session does not exist.")
-                                    }
+                                    self.capture_request(&node_address, &inbound_packet);
+                                    // if let Some(session) = self.sessions.get(&node_address) {
+                                    //     let message = decode_message(session, &inbound_packet);
+                                    //     match message {
+                                    //         Message::Request(request) => {
+                                    //             self.captured_requests.push(request);
+                                    //         }
+                                    //         Message::Response(_) => unreachable!(),
+                                    //     }
+                                    // } else {
+                                    //     panic!("Session does not exist.")
+                                    // }
                                 }
                             }
                         } else {
@@ -260,18 +261,35 @@ impl Handler {
                             .await;
                     }
                     Action::EstablishSession(_) => unreachable!(),
-                    Action::SendResponse(response) => match response {
-                        mock::Response::Default => {
-                            self.send_default_response(node_address, received_request.unwrap())
-                                .await
-                        }
-                        mock::Response::Custom(responses) => {
-                            self.send_custom_responses(node_address, responses).await
+                    Action::SendResponse(response) => {
+                        self.capture_request(&node_address, &inbound_packet);
+                        match response {
+                            mock::Response::Default => {
+                                self.send_default_response(node_address, received_request.unwrap())
+                                    .await
+                            }
+                            mock::Response::Custom(responses) => {
+                                self.send_custom_responses(node_address, responses).await
+                            }
                         }
                     },
                     Action::CaptureRequest => todo!(),
                 }
             }
+        }
+    }
+
+    fn capture_request(&mut self, node_address: &NodeAddress, inbound_packet: &InboundPacket) {
+        if let Some(session) = self.sessions.get(node_address) {
+            let message = decode_message(session, inbound_packet);
+            match message {
+                Message::Request(request) => {
+                    self.captured_requests.push(request);
+                }
+                Message::Response(_) => unreachable!(),
+            }
+        } else {
+            panic!("Session does not exist.")
         }
     }
 

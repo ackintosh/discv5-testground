@@ -31,14 +31,13 @@ pub(crate) async fn run(client: Client) -> Result<(), Box<dyn std::error::Error>
 
     // Seed is chosen such that all nodes are in the 256th bucket of bootstrap
     let seed = 1652;
-    let mut keypairs = generate_deterministic_keypair(3, seed);
+    let mut keypairs = generate_deterministic_keypair(5, seed);
 
-    let target_node_id = {
+    let target_enr = {
         let target_key = keypairs.pop().unwrap();
-        let target_enr = EnrBuilder::new("v4")
+        EnrBuilder::new("v4")
             .build(&target_key)
-            .expect("enr");
-        target_enr.node_id()
+            .expect("enr")
     };
 
     // ////////////////////////
@@ -90,8 +89,8 @@ pub(crate) async fn run(client: Client) -> Result<(), Box<dyn std::error::Error>
         .build();
 
     match client.global_seq() {
-        1 => run_discv5(client, enr, enr_key, config, another_instance_info, target_node_id).await?,
-        2 => run_mock(client, enr, enr_key, config).await?,
+        1 => run_discv5(client, enr, enr_key, config, another_instance_info, target_enr.node_id()).await?,
+        2 => run_mock(client, enr, enr_key, config, target_enr).await?,
         _ => unreachable!(),
     }
 
@@ -154,6 +153,7 @@ async fn run_mock(
     enr: Enr,
     enr_key: CombinedKey,
     config: discv5::Config,
+    target_enr: Enr,
 ) -> Result<(), Box<dyn std::error::Error>> {
     // ////////////////////////
     // Start mock
@@ -167,20 +167,40 @@ async fn run_mock(
         expect: Expect::Handshake(Request::FINDNODE),
         action: Action::EstablishSession(Box::new(Action::CaptureRequest)),
     });
-    let enr2 = {
-        let mut enr2 = enr.clone();
-        enr2.set_udp4(enr.udp4().unwrap() + 1, &enr_key).unwrap();
-        enr2
-    };
     behaviours.push_back(Behaviour {
         expect: Expect::Message(Request::FINDNODE),
-        action: Action::SendResponse(Response::Custom(vec![CustomResponse {
-            id: CustomResponseId::CapturedRequestId(0),
-            body: discv5::rpc::ResponseBody::Nodes {
-                total: 2,
-                nodes: vec![enr2],
+        action: Action::SendResponse(Response::Custom(vec![
+            CustomResponse {
+                id: CustomResponseId::CapturedRequestId(0),
+                body: discv5::rpc::ResponseBody::Nodes {
+                    total: 2,
+                    nodes: vec![target_enr.clone()],
+                },
             },
-        }])),
+            // OK
+            // CustomResponse {
+            //     id: CustomResponseId::CapturedRequestId(0),
+            //     body: discv5::rpc::ResponseBody::Nodes {
+            //         total: 2,
+            //         nodes: vec![target_enr.clone()],
+            //     },
+            // },
+            CustomResponse {
+                id: CustomResponseId::CapturedRequestId(1),
+                body: discv5::rpc::ResponseBody::Nodes {
+                    total: 1,
+                    nodes: vec![target_enr.clone()],
+                },
+            },
+            // NG
+            CustomResponse {
+                id: CustomResponseId::CapturedRequestId(0),
+                body: discv5::rpc::ResponseBody::Nodes {
+                    total: 2,
+                    nodes: vec![target_enr],
+                },
+            },
+        ])),
     });
     behaviours.push_back(Behaviour {
         expect: Expect::Message(Request::Ping),
