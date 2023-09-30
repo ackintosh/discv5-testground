@@ -5,17 +5,16 @@ mod session;
 mod socket;
 
 use crate::mock::handler::{Handler, HandlerIn};
-use crate::mock::session::Session;
 use discv5::enr::CombinedKey;
-use discv5::handler::{NodeAddress, NodeContact};
+use discv5::handler::NodeContact;
 use discv5::{Enr, IpMode};
-use std::collections::{HashMap, VecDeque};
+use std::collections::VecDeque;
 use tokio::sync::mpsc;
 use tracing::info;
 
 pub struct Behaviour {
     pub expect: Expect,
-    pub action: Action,
+    pub actions: Vec<Action>,
 }
 
 #[derive(Debug)]
@@ -35,7 +34,7 @@ pub enum Request {
 pub enum Action {
     Ignore(String),
     SendWhoAreYou,
-    EstablishSession(Box<Action>),
+    EstablishSession,
     SendResponse(Response),
     CaptureRequest,
 }

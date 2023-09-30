@@ -1,11 +1,10 @@
 use crate::concurrent_requests::InstanceInfo;
 use crate::utils::publish_and_collect;
 use discv5::enr::{CombinedKey, EnrBuilder};
-use discv5::{Discv5, ListenConfig, RequestError};
+use discv5::{Discv5, ListenConfig};
 use std::net::Ipv4Addr;
 use std::time::Duration;
 use testground::client::Client;
-use tokio::sync::mpsc::Receiver;
 use tracing::{error, info};
 
 const STATE_DISCV5_STARTED: &str = "state_discv5_started";
@@ -104,7 +103,7 @@ pub(crate) async fn run(client: Client) -> Result<(), Box<dyn std::error::Error>
                     discv5::Event::NodeInserted { .. } => {}
                     discv5::Event::SessionEstablished(_, _) => {}
                     discv5::Event::SocketUpdated(_) => {}
-                    discv5::Event::TalkRequest(mut req) => {
+                    discv5::Event::TalkRequest(req) => {
                         req_count += 1;
                         info!("TalkRequest: {:?}", req);
                         let response = req.body().to_vec();

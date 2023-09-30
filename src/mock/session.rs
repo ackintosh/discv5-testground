@@ -30,7 +30,7 @@ impl Session {
         local_key: &CombinedKey,
         local_id: &NodeId,
         remote_id: &NodeId,
-        challenge: Challenge,
+        challenge: &Challenge,
         // id_nonce_sig: &[u8],
         ephem_pubkey: &[u8],
         enr_record: Option<Enr>,

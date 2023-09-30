@@ -138,21 +138,21 @@ async fn run_mock(
     let mut behaviours = VecDeque::new();
     behaviours.push_back(Behaviour {
         expect: Expect::WhoAreYou,
-        action: Action::Ignore(
+        actions: vec![Action::Ignore(
             "Ingore WHOAREYOU packet to make happen a challenge timeout on Node1 side.".to_string(),
-        ),
+        )],
     });
     behaviours.push_back(Behaviour {
         expect: Expect::MessageWithoutSession,
-        action: Action::SendWhoAreYou,
+        actions: vec![Action::SendWhoAreYou],
     });
     behaviours.push_back(Behaviour {
         expect: Expect::MessageWithoutSession,
-        action: Action::Ignore("WHOAREYOU packet already sent.".to_string()),
+        actions: vec![Action::Ignore("WHOAREYOU packet already sent.".to_string())],
     });
     behaviours.push_back(Behaviour {
         expect: Expect::Handshake(Request::FINDNODE),
-        action: Action::EstablishSession(Box::new(Action::Ignore("todo".to_string()))),
+        actions: vec![Action::EstablishSession, Action::Ignore("todo".to_string())],
     });
     // TODO: handle PING request
     let mut mock = Mock::start(enr, enr_key, config, behaviours).await;

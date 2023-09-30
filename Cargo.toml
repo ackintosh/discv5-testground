@@ -14,7 +14,7 @@ chrono = "0.4.26"
 # Speed up ENR update
 # https://github.com/sigp/discv5/commit/a9ded0490229418cb61e747d55d3e0879b62e1d7
 #discv5 = { git = "https://github.com/njgheorghita/discv5.git", rev = "09262ead2882e062de1a6a45df9ea61917eb8465" }
-discv5 = { git = "https://github.com/ackintosh/discv5.git", rev = "337be4b135cd8ddd71a081d37bcba19c8cfe6342" }
+discv5 = { git = "https://github.com/ackintosh/discv5.git", rev = "59f9ca11b923139da26db710d1144537001f04a5" }
 rand_xorshift = "0.3.0"
 serde = "1.0.175"
 serde_json = "1.0.104"

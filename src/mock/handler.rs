@@ -4,10 +4,10 @@ use crate::mock::socket::Socket;
 use crate::mock::{Action, Behaviour, CustomResponse, CustomResponseId, Expect, Request};
 use discv5::enr::{CombinedKey, NodeId};
 use discv5::handler::{NodeAddress, NodeContact};
-use discv5::packet::{ChallengeData, IdNonce, MessageNonce, Packet, PacketKind};
+use discv5::packet::{ChallengeData, IdNonce, Packet, PacketKind};
 use discv5::rpc::{Message, RequestBody};
 use discv5::socket::{InboundPacket, OutboundPacket};
-use discv5::{DefaultProtocolId, Enr, ListenConfig};
+use discv5::{DefaultProtocolId, Enr};
 use std::collections::{HashMap, VecDeque};
 use std::net::IpAddr;
 use tokio::sync::mpsc;
@@ -135,20 +135,11 @@ impl Handler {
                     ),
                 }
 
-                match behaviour.action {
-                    Action::Ignore(reason) => info!(
-                        "Ignoring WHOAREYOU packet. id_nonce:{:?}, reason:{}",
-                        id_nonce, reason
-                    ),
-                    Action::SendWhoAreYou => unreachable!(),
-                    Action::EstablishSession(_) => unreachable!(),
-                    Action::SendResponse(_) => unreachable!(),
-                    Action::CaptureRequest => unreachable!(),
-                }
+                self.do_actions(inbound_packet, behaviour.actions).await;
             }
             PacketKind::Handshake {
-                src_id,
-                id_nonce_sig,
+                src_id: _,
+                id_nonce_sig: _,
                 ephem_pubkey,
                 enr_record,
             } => {
@@ -164,50 +155,28 @@ impl Handler {
                     ),
                 };
 
-                match behaviour.action {
-                    Action::Ignore(_) => todo!(),
-                    Action::SendWhoAreYou => unreachable!(),
-                    Action::EstablishSession(next_action) => {
-                        let node_address = NodeAddress {
-                            socket_addr: inbound_packet.src_address,
-                            node_id: src_id,
-                        };
-                        if let Some(challenge) = self.active_challenges.remove(&node_address) {
-                            self.establish_session(
-                                node_address.clone(),
-                                challenge,
-                                &ephem_pubkey,
-                                enr_record,
-                            )
-                            .await;
-
-                            match next_action.as_ref() {
-                                Action::Ignore(_) => {}
-                                Action::SendWhoAreYou => {}
-                                Action::EstablishSession(_) => {}
-                                Action::SendResponse(_) => {}
-                                Action::CaptureRequest => {
-                                    self.capture_request(&node_address, &inbound_packet);
-                                    // if let Some(session) = self.sessions.get(&node_address) {
-                                    //     let message = decode_message(session, &inbound_packet);
-                                    //     match message {
-                                    //         Message::Request(request) => {
-                                    //             self.captured_requests.push(request);
-                                    //         }
-                                    //         Message::Response(_) => unreachable!(),
-                                    //     }
-                                    // } else {
-                                    //     panic!("Session does not exist.")
-                                    // }
-                                }
-                            }
-                        } else {
-                            panic!("No active challenge");
-                        }
+                {
+                    let node_address = node_address(&inbound_packet);
+                    let challenge = self.active_challenges.get(&node_address).unwrap();
+                    let (session, _) = Session::establish_from_challenge(
+                        &self.local_key,
+                        &self.node_id,
+                        &node_address.node_id,
+                        challenge,
+                        &ephem_pubkey,
+                        enr_record,
+                    )
+                    .unwrap();
+                    let request = match decode_message(&session, &inbound_packet) {
+                        Message::Request(request) => request,
+                        _ => unreachable!(),
+                    };
+                    if !check_request_kind(&request, &expected_request_kind) {
+                        panic!("Unexpected request kind. expected:{expected_request_kind:?}, actual:{request:?}");
                     }
-                    Action::SendResponse(_) => unreachable!(),
-                    Action::CaptureRequest => unreachable!(),
                 }
+
+                self.do_actions(inbound_packet, behaviour.actions).await;
             }
             PacketKind::Message { src_id } => {
                 let node_address = NodeAddress {
@@ -217,7 +186,6 @@ impl Handler {
                 let behaviour = next_behaviour!();
 
                 // Expect
-                let mut received_request = None;
                 match behaviour.expect {
                     Expect::MessageWithoutSession => {
                         // Check session existence
@@ -234,8 +202,6 @@ impl Handler {
                                     if !check_request_kind(&request, &expected_request) {
                                         panic!("Unexpected request. {:?}", request);
                                     }
-
-                                    received_request = Some(request);
                                 }
                                 Message::Response(_) => todo!(),
                             }
@@ -250,37 +216,66 @@ impl Handler {
                 }
 
                 // Action
-                match behaviour.action {
-                    Action::Ignore(reason) => info!("Ignoring Message packet. reason:{}", reason),
-                    Action::SendWhoAreYou => {
-                        let node_address = NodeAddress {
-                            socket_addr: inbound_packet.src_address,
-                            node_id: src_id,
-                        };
-                        self.send_challenge(node_address, inbound_packet.header.message_nonce)
+                self.do_actions(inbound_packet, behaviour.actions).await;
+            }
+        }
+    }
+
+    async fn do_actions(&mut self, inbound_packet: InboundPacket, actions: Vec<Action>) {
+        for action in actions {
+            match action {
+                Action::Ignore(reason) => info!("Ignoring a packet. reason:{reason}"),
+                Action::SendWhoAreYou => self.send_challenge(&inbound_packet).await,
+                Action::EstablishSession => match inbound_packet.header.kind.clone() {
+                    PacketKind::Handshake {
+                        src_id: _,
+                        id_nonce_sig: _,
+                        ephem_pubkey,
+                        enr_record,
+                    } => {
+                        let node_address = node_address(&inbound_packet);
+                        if let Some(challenge) = self.active_challenges.remove(&node_address) {
+                            self.establish_session(
+                                node_address.clone(),
+                                challenge,
+                                &ephem_pubkey,
+                                enr_record,
+                            )
                             .await;
+                        } else {
+                            panic!("No active challenge");
+                        }
                     }
-                    Action::EstablishSession(_) => unreachable!(),
-                    Action::SendResponse(response) => {
-                        self.capture_request(&node_address, &inbound_packet);
+                    _ => unreachable!(),
+                },
+                Action::SendResponse(response) => {
+                    let node_address = node_address(&inbound_packet);
+                    if let Some(session) = self.sessions.get(&node_address) {
+                        let request = match decode_message(session, &inbound_packet) {
+                            Message::Request(request) => request,
+                            Message::Response(_) => unreachable!(),
+                        };
                         match response {
                             mock::Response::Default => {
-                                self.send_default_response(node_address, received_request.unwrap())
-                                    .await
+                                self.send_default_response(node_address, request).await
                             }
                             mock::Response::Custom(responses) => {
                                 self.send_custom_responses(node_address, responses).await
                             }
                         }
-                    },
-                    Action::CaptureRequest => todo!(),
+                    } else {
+                        panic!("Session does not exist.")
+                    }
                 }
+                Action::CaptureRequest => self.capture_request(&inbound_packet),
             }
         }
     }
 
-    fn capture_request(&mut self, node_address: &NodeAddress, inbound_packet: &InboundPacket) {
-        if let Some(session) = self.sessions.get(node_address) {
+    fn capture_request(&mut self, inbound_packet: &InboundPacket) {
+        let node_address = node_address(inbound_packet);
+
+        if let Some(session) = self.sessions.get(&node_address) {
             let message = decode_message(session, inbound_packet);
             match message {
                 Message::Request(request) => {
@@ -293,9 +288,11 @@ impl Handler {
         }
     }
 
-    async fn send_challenge(&mut self, node_address: NodeAddress, message_nonce: MessageNonce) {
+    async fn send_challenge(&mut self, inbound_packet: &InboundPacket) {
+        let node_address = node_address(inbound_packet);
         let id_nonce: IdNonce = rand::random();
-        let packet = Packet::new_whoareyou(message_nonce, id_nonce, 0);
+        let packet =
+            Packet::new_whoareyou(inbound_packet.header.message_nonce.clone(), id_nonce, 0);
         let challenge_data =
             ChallengeData::try_from(packet.authenticated_data::<DefaultProtocolId>().as_slice())
                 .expect("Must be the correct challenge size");
@@ -392,7 +389,7 @@ impl Handler {
             &self.local_key,
             &self.node_id,
             &node_address.node_id,
-            challenge,
+            &challenge,
             ephem_pubkey,
             enr_record,
         ) {
@@ -429,5 +426,18 @@ fn check_request_kind(request: &discv5::rpc::Request, expected: &Request) -> boo
             RequestBody::Ping { .. } => true,
             _ => false,
         },
+    }
+}
+
+fn node_address(inbound_packet: &InboundPacket) -> NodeAddress {
+    let src_id = match inbound_packet.header.kind {
+        PacketKind::Message { src_id } => src_id,
+        PacketKind::WhoAreYou { .. } => unreachable!(),
+        PacketKind::Handshake { src_id, .. } => src_id,
+    };
+
+    NodeAddress {
+        socket_addr: inbound_packet.src_address,
+        node_id: src_id,
     }
 }

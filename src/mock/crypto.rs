@@ -11,7 +11,6 @@ const NODE_ID_LENGTH: usize = 32;
 const INFO_LENGTH: usize = 26 + 2 * NODE_ID_LENGTH;
 const KEY_LENGTH: usize = 16;
 const KEY_AGREEMENT_STRING: &str = "discovery v5 key agreement";
-const ID_SIGNATURE_TEXT: &str = "discovery v5 identity proof";
 
 type Key = [u8; KEY_LENGTH];
 
