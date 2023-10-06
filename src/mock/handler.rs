@@ -1,7 +1,7 @@
 use crate::mock;
 use crate::mock::session::Session;
 use crate::mock::socket::Socket;
-use crate::mock::{Action, Behaviour, CustomResponse, CustomResponseId, Expect, Request};
+use crate::mock::{Action, Behaviour, Behaviours, CustomResponse, CustomResponseId, Expect, Request};
 use discv5::enr::{CombinedKey, NodeId};
 use discv5::handler::{NodeAddress, NodeContact};
 use discv5::packet::{ChallengeData, IdNonce, Packet, PacketKind};
@@ -35,7 +35,7 @@ pub(crate) struct Handler {
     node_id: NodeId,
     from_mock: mpsc::UnboundedReceiver<HandlerIn>,
     socket: Socket,
-    behaviours: VecDeque<Behaviour>,
+    behaviours: Behaviours,
     active_challenges: HashMap<NodeAddress, Challenge>,
     sessions: HashMap<NodeAddress, Session>,
     captured_requests: Vec<discv5::rpc::Request>,
@@ -46,7 +46,7 @@ impl Handler {
         enr: Enr,
         enr_key: CombinedKey,
         config: discv5::Config,
-        behaviours: VecDeque<Behaviour>,
+        behaviours: Behaviours,
     ) -> (UnboundedSender<HandlerIn>, Receiver<HandlerOut>) {
         let (handler_send, from_mock) = mpsc::unbounded_channel();
         let (_to_mock, handler_recv) = mpsc::channel(50);
@@ -113,10 +113,53 @@ impl Handler {
     }
 
     pub(crate) async fn process_inbound_packet(&mut self, inbound_packet: InboundPacket) {
+        match self.behaviours {
+            Behaviours::Declarative(_) => {
+                self.process_inbound_packet_declarative(inbound_packet).await;
+            },
+            Behaviours::Sequential(_) => {
+                self.process_inbound_packet_sequential(inbound_packet).await;
+            }
+        }
+    }
+
+    pub(crate) async fn process_inbound_packet_declarative(&mut self, inbound_packet: InboundPacket) {
         let inbound_packet_kind = inbound_packet.header.kind.clone();
+        let behaviour = match &self.behaviours {
+            Behaviours::Declarative(behaviour) => behaviour,
+            Behaviours::Sequential(_) => unreachable!(),
+        };
+
+        match inbound_packet_kind {
+            PacketKind::Message { src_id } => {
+                let node_address = NodeAddress {
+                    socket_addr: inbound_packet.src_address,
+                    node_id: src_id,
+                };
+                if self.sessions.contains_key(&node_address) {
+                    self.do_actions(inbound_packet, behaviour.message.clone()).await;
+                } else {
+                    self.do_actions(inbound_packet, behaviour.message_without_session.clone()).await;
+                }
+            }
+            PacketKind::WhoAreYou { .. } => {
+                self.do_actions(inbound_packet, behaviour.whoareyou.clone()).await;
+            }
+            PacketKind::Handshake { .. } => {
+                self.do_actions(inbound_packet, behaviour.handshake.clone()).await;
+            }
+        }
+    }
+
+    pub(crate) async fn process_inbound_packet_sequential(&mut self, inbound_packet: InboundPacket) {
+        let inbound_packet_kind = inbound_packet.header.kind.clone();
+        let behaviours = match self.behaviours {
+            Behaviours::Declarative(_) => unreachable!(),
+            Behaviours::Sequential(ref mut behaviours) => behaviours,
+        };
         macro_rules! next_behaviour {
             () => {{
-                self.behaviours.pop_front().expect(
+                behaviours.pop_front().expect(
                     format!("No behaviour. inbound_packet:{:?}", inbound_packet_kind).as_str(),
                 )
             }};
@@ -299,15 +342,13 @@ impl Handler {
 
         info!("Sending WHOAREYOU to {}", node_address);
         self.send(node_address.clone(), packet).await;
-        if let Some(_) = self.active_challenges.insert(
+        self.active_challenges.insert(
             node_address,
             Challenge {
                 data: challenge_data,
                 remote_enr: None,
             },
-        ) {
-            panic!("Unexpected call for send_challenge()");
-        }
+        );
     }
 
     async fn send_response(&mut self, node_address: NodeAddress, response: discv5::rpc::Response) {

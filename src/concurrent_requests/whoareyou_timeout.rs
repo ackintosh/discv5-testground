@@ -1,5 +1,5 @@
 use crate::concurrent_requests::InstanceInfo;
-use crate::mock::{Action, Behaviour, Expect, Mock, Request};
+use crate::mock::{Action, Behaviour, Behaviours, Expect, Mock, Request};
 use crate::utils::publish_and_collect;
 use discv5::enr::{CombinedKey, EnrBuilder};
 use discv5::{Discv5, Enr, ListenConfig};
@@ -155,7 +155,7 @@ async fn run_mock(
         actions: vec![Action::EstablishSession, Action::Ignore("todo".to_string())],
     });
     // TODO: handle PING request
-    let mut mock = Mock::start(enr, enr_key, config, behaviours).await;
+    let mut mock = Mock::start(enr, enr_key, config, Behaviours::Sequential(behaviours)).await;
 
     client
         .signal_and_wait(

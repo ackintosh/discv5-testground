@@ -12,6 +12,18 @@ use std::collections::VecDeque;
 use tokio::sync::mpsc;
 use tracing::info;
 
+pub enum Behaviours {
+    Declarative(DeclarativeBehaviour),
+    Sequential(VecDeque<Behaviour>),
+}
+
+pub struct DeclarativeBehaviour {
+    pub whoareyou: Vec<Action>,
+    pub handshake: Vec<Action>,
+    pub message: Vec<Action>,
+    pub message_without_session: Vec<Action>,
+}
+
 pub struct Behaviour {
     pub expect: Expect,
     pub actions: Vec<Action>,
@@ -31,6 +43,7 @@ pub enum Request {
     Ping,
 }
 
+#[derive(Clone)]
 pub enum Action {
     Ignore(String),
     SendWhoAreYou,
@@ -39,15 +52,18 @@ pub enum Action {
     CaptureRequest,
 }
 
+#[derive(Clone)]
 pub enum Response {
     Default,
     Custom(Vec<CustomResponse>),
 }
 
+#[derive(Clone)]
 pub enum CustomResponseId {
     CapturedRequestId(usize),
 }
 
+#[derive(Clone)]
 pub struct CustomResponse {
     pub id: CustomResponseId,
     pub body: discv5::rpc::ResponseBody,
@@ -63,7 +79,7 @@ impl Mock {
         enr: Enr,
         enr_key: CombinedKey,
         config: discv5::Config,
-        behaviours: VecDeque<Behaviour>,
+        behaviours: Behaviours,
     ) -> Self {
         let (to_handler, _from_handler) = Handler::spawn(enr, enr_key, config, behaviours).await;
 

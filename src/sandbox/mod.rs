@@ -1,6 +1,4 @@
-use crate::mock::{
-    Action, Behaviour, CustomResponse, CustomResponseId, Expect, Mock, Request, Response,
-};
+use crate::mock::{Action, Behaviour, Behaviours, CustomResponse, CustomResponseId, DeclarativeBehaviour, Expect, Mock, Request, Response};
 use crate::utils::publish_and_collect;
 use discv5::enr::{CombinedKey, EnrBuilder};
 use discv5::rpc::ResponseBody;
@@ -183,12 +181,8 @@ async fn run_mock(
     // ////////////////////////
     // Start mock
     // ////////////////////////
-    let mut behaviours = VecDeque::new();
-    behaviours.push_back(Behaviour {
-        expect: Expect::MessageWithoutSession,
-        actions: vec![Action::SendWhoAreYou],
-    });
-    // FINDNODE
+    // Sequential: FINDNODE
+    // let mut behaviours = VecDeque::new();
     // behaviours.push_back(Behaviour {
     //     expect: Expect::Handshake(Request::FINDNODE),
     //     action: Action::EstablishSession(Box::new(Action::CaptureRequest)),
@@ -219,37 +213,58 @@ async fn run_mock(
     //         },
     //     ])),
     // });
-    // PING
-    behaviours.push_back(Behaviour {
-        expect: Expect::Handshake(Request::Ping),
-        actions: vec![
-            Action::EstablishSession,
-            Action::CaptureRequest,
-            Action::SendResponse(Response::Custom(vec![CustomResponse {
-                id: CustomResponseId::CapturedRequestId(0),
-                body: ResponseBody::Pong {
-                    enr_seq: discv5_node.enr.seq(),
-                    ip: IpAddr::V4(discv5_node.enr.ip4().unwrap()),
-                    port: 0, // test
-                },
-            }])),
+
+    // Sequential: PING
+    // let mut behaviours = VecDeque::new();
+    // behaviours.push_back(Behaviour {
+    //     expect: Expect::MessageWithoutSession,
+    //     actions: vec![Action::SendWhoAreYou],
+    // });
+    // behaviours.push_back(Behaviour {
+    //     expect: Expect::Handshake(Request::Ping),
+    //     actions: vec![
+    //         Action::EstablishSession,
+    //         Action::CaptureRequest,
+    //         Action::SendResponse(Response::Custom(vec![CustomResponse {
+    //             id: CustomResponseId::CapturedRequestId(0),
+    //             body: ResponseBody::Pong {
+    //                 enr_seq: discv5_node.enr.seq(),
+    //                 ip: IpAddr::V4(discv5_node.enr.ip4().unwrap()),
+    //                 port: 0, // test
+    //             },
+    //         }])),
+    //     ],
+    // });
+    // behaviours.push_back(Behaviour {
+    //     expect: Expect::Message(Request::Ping),
+    //     actions: vec![
+    //         Action::CaptureRequest,
+    //         Action::SendResponse(Response::Custom(vec![CustomResponse {
+    //             id: CustomResponseId::CapturedRequestId(1),
+    //             body: ResponseBody::Pong {
+    //                 enr_seq: discv5_node.enr.seq(),
+    //                 ip: IpAddr::V4(discv5_node.enr.ip4().unwrap()),
+    //                 port: 0, // test
+    //             },
+    //         }])),
+    //     ],
+    // });
+
+    // Declarative
+    let behaviours = Behaviours::Declarative(DeclarativeBehaviour {
+        whoareyou: vec![],
+        message_without_session: vec![
+            Action::SendWhoAreYou
         ],
-    });
-    behaviours.push_back(Behaviour {
-        expect: Expect::Message(Request::Ping),
-        actions: vec![
-            Action::CaptureRequest,
-            Action::SendResponse(Response::Custom(vec![CustomResponse {
-                id: CustomResponseId::CapturedRequestId(1),
-                body: ResponseBody::Pong {
-                    enr_seq: discv5_node.enr.seq(),
-                    ip: IpAddr::V4(discv5_node.enr.ip4().unwrap()),
-                    port: 0, // test
-                },
-            }])),
+        handshake: vec![
+            Action::Ignore("Ignoring handshake messages".to_string())
+        ],
+        message: vec![
+            Action::SendWhoAreYou
         ],
     });
     let mut _mock = Mock::start(enr, enr_key, config, behaviours).await;
+    // let mut _mock = Mock::start(enr, enr_key, config, Behaviours::Sequential(behaviours)).await;
 
     client
         .signal_and_wait(
