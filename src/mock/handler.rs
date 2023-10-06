@@ -1,7 +1,9 @@
 use crate::mock;
 use crate::mock::session::Session;
 use crate::mock::socket::Socket;
-use crate::mock::{Action, Behaviour, Behaviours, CustomResponse, CustomResponseId, Expect, Request};
+use crate::mock::{
+    Action, Behaviour, Behaviours, CustomResponse, CustomResponseId, Expect, Request,
+};
 use discv5::enr::{CombinedKey, NodeId};
 use discv5::handler::{NodeAddress, NodeContact};
 use discv5::packet::{ChallengeData, IdNonce, Packet, PacketKind};
@@ -115,15 +117,19 @@ impl Handler {
     pub(crate) async fn process_inbound_packet(&mut self, inbound_packet: InboundPacket) {
         match self.behaviours {
             Behaviours::Declarative(_) => {
-                self.process_inbound_packet_declarative(inbound_packet).await;
-            },
+                self.process_inbound_packet_declarative(inbound_packet)
+                    .await;
+            }
             Behaviours::Sequential(_) => {
                 self.process_inbound_packet_sequential(inbound_packet).await;
             }
         }
     }
 
-    pub(crate) async fn process_inbound_packet_declarative(&mut self, inbound_packet: InboundPacket) {
+    pub(crate) async fn process_inbound_packet_declarative(
+        &mut self,
+        inbound_packet: InboundPacket,
+    ) {
         let inbound_packet_kind = inbound_packet.header.kind.clone();
         let behaviour = match &self.behaviours {
             Behaviours::Declarative(behaviour) => behaviour,
@@ -137,21 +143,28 @@ impl Handler {
                     node_id: src_id,
                 };
                 if self.sessions.contains_key(&node_address) {
-                    self.do_actions(inbound_packet, behaviour.message.clone()).await;
+                    self.do_actions(inbound_packet, behaviour.message.clone())
+                        .await;
                 } else {
-                    self.do_actions(inbound_packet, behaviour.message_without_session.clone()).await;
+                    self.do_actions(inbound_packet, behaviour.message_without_session.clone())
+                        .await;
                 }
             }
             PacketKind::WhoAreYou { .. } => {
-                self.do_actions(inbound_packet, behaviour.whoareyou.clone()).await;
+                self.do_actions(inbound_packet, behaviour.whoareyou.clone())
+                    .await;
             }
             PacketKind::Handshake { .. } => {
-                self.do_actions(inbound_packet, behaviour.handshake.clone()).await;
+                self.do_actions(inbound_packet, behaviour.handshake.clone())
+                    .await;
             }
         }
     }
 
-    pub(crate) async fn process_inbound_packet_sequential(&mut self, inbound_packet: InboundPacket) {
+    pub(crate) async fn process_inbound_packet_sequential(
+        &mut self,
+        inbound_packet: InboundPacket,
+    ) {
         let inbound_packet_kind = inbound_packet.header.kind.clone();
         let behaviours = match self.behaviours {
             Behaviours::Declarative(_) => unreachable!(),
