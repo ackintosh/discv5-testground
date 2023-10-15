@@ -120,7 +120,7 @@ async fn run_discv5(
     enr_key: CombinedKey,
     config: discv5::Config,
     participants: Vec<InstanceInfo>,
-    _target_node_id: NodeId,
+    target_node_id: NodeId,
 ) -> Result<(), Box<dyn std::error::Error>> {
     // ////////////////////////
     // Start discv5
@@ -141,8 +141,8 @@ async fn run_discv5(
     let mut handles = vec![];
     for peer in participants.iter().filter(|p| p.seq != client.global_seq()) {
         for _ in 0..2 {
-            let fut = discv5.send_ping(peer.enr.clone());
-            // let fut = discv5.find_node(target_node_id);
+            // let fut = discv5.send_ping(peer.enr.clone());
+            let fut = discv5.find_node(target_node_id);
             handles.push(tokio::spawn(fut));
         }
     }
@@ -177,10 +177,11 @@ async fn run_mock(
     enr: Enr,
     enr_key: CombinedKey,
     config: discv5::Config,
-    participants: Vec<InstanceInfo>,
+    _participants: Vec<InstanceInfo>,
     _target_enr: Enr,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let discv5_node = participants.into_iter().find(|p| p.seq == 1).unwrap();
+    // let discv5_node = participants.into_iter().find(|p| p.seq == 1).unwrap();
+
     // ////////////////////////
     // Start mock
     // ////////////////////////
@@ -257,7 +258,7 @@ async fn run_mock(
     let behaviours = Behaviours::Declarative(DeclarativeBehaviour {
         whoareyou: vec![],
         message_without_session: vec![Action::SendWhoAreYou],
-        handshake: vec![Action::Ignore("Ignoring handshake messages".to_string())],
+        handshake: vec![Action::Ignore("Ignoring handshake message".to_string())],
         message: vec![Action::SendWhoAreYou],
     });
     let mut _mock = Mock::start(enr, enr_key, config, behaviours).await;

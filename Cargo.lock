@@ -428,7 +428,7 @@ dependencies = [
 [[package]]
 name = "discv5"
 version = "0.3.1"
-source = "git+https://github.com/ackintosh/discv5.git?rev=59f9ca11b923139da26db710d1144537001f04a5#59f9ca11b923139da26db710d1144537001f04a5"
+source = "git+https://github.com/ackintosh/discv5.git?rev=90bcd002c3ef711b1558c4a6989e4b65f7737718#90bcd002c3ef711b1558c4a6989e4b65f7737718"
 dependencies = [
  "aes",
  "aes-gcm",
