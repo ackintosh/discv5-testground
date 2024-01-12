@@ -12,6 +12,7 @@ use std::collections::VecDeque;
 use tokio::sync::mpsc;
 use tracing::info;
 
+#[allow(dead_code)]
 pub enum Behaviours {
     Declarative(DeclarativeBehaviour),
     Sequential(VecDeque<Behaviour>),
@@ -39,7 +40,7 @@ pub enum Expect {
 
 #[derive(Debug)]
 pub enum Request {
-    FINDNODE,
+    FindNode,
     Ping,
 }
 
@@ -52,6 +53,7 @@ pub enum Action {
     CaptureRequest,
 }
 
+#[allow(dead_code)]
 #[derive(Clone)]
 pub enum Response {
     Default,

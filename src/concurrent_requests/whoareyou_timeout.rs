@@ -151,7 +151,7 @@ async fn run_mock(
         actions: vec![Action::Ignore("WHOAREYOU packet already sent.".to_string())],
     });
     behaviours.push_back(Behaviour {
-        expect: Expect::Handshake(Request::FINDNODE),
+        expect: Expect::Handshake(Request::FindNode),
         actions: vec![Action::EstablishSession, Action::Ignore("todo".to_string())],
     });
     // TODO: handle PING request

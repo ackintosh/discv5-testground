@@ -121,7 +121,7 @@ async fn run_discv5(
     enr_key: CombinedKey,
     config: discv5::Config,
     participants: Vec<InstanceInfo>,
-    target_node_id: NodeId,
+    _target_node_id: NodeId,
 ) -> Result<(), Box<dyn std::error::Error>> {
     // ////////////////////////
     // Start discv5
@@ -256,12 +256,12 @@ async fn run_mock(
     });
 
     // Declarative
-    // let behaviours = Behaviours::Declarative(DeclarativeBehaviour {
-    //     whoareyou: vec![],
-    //     message_without_session: vec![Action::SendWhoAreYou],
-    //     handshake: vec![Action::Ignore("Ignoring handshake message".to_string())],
-    //     message: vec![Action::SendWhoAreYou],
-    // });
+    let _behaviours = Behaviours::Declarative(DeclarativeBehaviour {
+        whoareyou: vec![],
+        message_without_session: vec![Action::SendWhoAreYou],
+        handshake: vec![Action::Ignore("Ignoring handshake message".to_string())],
+        message: vec![Action::SendWhoAreYou],
+    });
     let mut _mock = Mock::start(enr, enr_key, config, Behaviours::Sequential(behaviours)).await;
     // let mut _mock = Mock::start(enr, enr_key, config, Behaviours::Sequential(behaviours)).await;
 

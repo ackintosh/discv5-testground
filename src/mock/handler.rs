@@ -347,7 +347,7 @@ impl Handler {
         let node_address = node_address(inbound_packet);
         let id_nonce: IdNonce = rand::random();
         let packet =
-            Packet::new_whoareyou(inbound_packet.header.message_nonce.clone(), id_nonce, 0);
+            Packet::new_whoareyou(inbound_packet.header.message_nonce, id_nonce, 0);
         let challenge_data =
             ChallengeData::try_from(packet.authenticated_data::<DefaultProtocolId>().as_slice())
                 .expect("Must be the correct challenge size");
@@ -460,7 +460,7 @@ fn decode_message(session: &Session, inbound_packet: &InboundPacket) -> discv5::
     // Decrypt the message
     let message = session
         .decrypt_message(
-            inbound_packet.header.message_nonce.clone(),
+            inbound_packet.header.message_nonce,
             &inbound_packet.message,
             &inbound_packet.authenticated_data,
         )
@@ -471,14 +471,8 @@ fn decode_message(session: &Session, inbound_packet: &InboundPacket) -> discv5::
 
 fn check_request_kind(request: &discv5::rpc::Request, expected: &Request) -> bool {
     match expected {
-        Request::FINDNODE => match request.body {
-            RequestBody::FindNode { .. } => true,
-            _ => false,
-        },
-        Request::Ping => match request.body {
-            RequestBody::Ping { .. } => true,
-            _ => false,
-        },
+        Request::FindNode => matches!(request.body, RequestBody::FindNode { .. }),
+        Request::Ping => matches!(request.body, RequestBody::Ping { .. }),
     }
 }
 
