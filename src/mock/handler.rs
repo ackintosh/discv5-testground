@@ -2,7 +2,7 @@ use crate::mock;
 use crate::mock::session::Session;
 use crate::mock::socket::Socket;
 use crate::mock::{
-    Action, Behaviour, Behaviours, CustomResponse, CustomResponseId, Expect, Request,
+    Action, Behaviours, CustomResponse, CustomResponseId, Expect, Request,
 };
 use discv5::enr::{CombinedKey, NodeId};
 use discv5::handler::{NodeAddress, NodeContact};
@@ -10,8 +10,9 @@ use discv5::packet::{ChallengeData, IdNonce, Packet, PacketKind};
 use discv5::rpc::{Message, RequestBody};
 use discv5::socket::{InboundPacket, OutboundPacket};
 use discv5::{DefaultProtocolId, Enr};
-use std::collections::{HashMap, VecDeque};
+use std::collections::HashMap;
 use std::net::IpAddr;
+use std::num::NonZeroU16;
 use tokio::sync::mpsc;
 use tokio::sync::mpsc::{Receiver, UnboundedSender};
 use tracing::{info, warn};
@@ -402,7 +403,7 @@ impl Handler {
                         body: discv5::rpc::ResponseBody::Pong {
                             enr_seq: self.enr.seq(),
                             ip: IpAddr::from(self.enr.ip4().unwrap()),
-                            port: self.enr.udp4().unwrap(),
+                            port: NonZeroU16::new(self.enr.udp4().unwrap()).unwrap(),
                         },
                     },
                 )
