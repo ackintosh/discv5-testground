@@ -1,9 +1,7 @@
 use crate::mock;
 use crate::mock::session::Session;
 use crate::mock::socket::Socket;
-use crate::mock::{
-    Action, Behaviours, CustomResponse, CustomResponseId, Expect, Request,
-};
+use crate::mock::{Action, Behaviours, CustomResponse, CustomResponseId, Expect, Request};
 use discv5::enr::{CombinedKey, NodeId};
 use discv5::handler::{NodeAddress, NodeContact};
 use discv5::packet::{ChallengeData, IdNonce, Packet, PacketKind};
