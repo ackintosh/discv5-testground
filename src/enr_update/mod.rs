@@ -3,7 +3,7 @@ mod params;
 use crate::enr_update::params::Params;
 use crate::utils::publish_and_collect;
 use chrono::Local;
-use discv5::enr::{CombinedKey, EnrBuilder};
+use discv5::enr::CombinedKey;
 use discv5::{Discv5, Enr, ListenConfig};
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
@@ -31,11 +31,9 @@ pub(super) async fn run(client: Client) -> Result<(), Box<dyn std::error::Error>
     let enr_key = CombinedKey::generate_secp256k1();
 
     let enr = if client.global_seq() == 1 {
-        EnrBuilder::new("v4")
-            .build(&enr_key)
-            .expect("Construct an Enr")
+        Enr::builder().build(&enr_key).expect("Construct an Enr")
     } else {
-        EnrBuilder::new("v4")
+        Enr::builder()
             .ip(run_parameters
                 .data_network_ip()?
                 .expect("IP address for the data network"))

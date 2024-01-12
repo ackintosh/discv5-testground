@@ -1,6 +1,6 @@
 use crate::utils::publish_and_collect;
 use chrono::Local;
-use discv5::enr::{CombinedKey, EnrBuilder, NodeId};
+use discv5::enr::{CombinedKey, NodeId};
 use discv5::{Discv5, Enr, Key, ListenConfig};
 use serde::{Deserialize, Serialize};
 use testground::client::Client;
@@ -42,7 +42,7 @@ pub(super) async fn run(client: Client) -> Result<(), Box<dyn std::error::Error>
     // Construct a local Enr
     // ////////////////////////
     let enr_key = CombinedKey::generate_secp256k1();
-    let enr = EnrBuilder::new("v4")
+    let enr = Enr::builder()
         .ip(run_parameters
             .data_network_ip()?
             .expect("IP address for the data network"))

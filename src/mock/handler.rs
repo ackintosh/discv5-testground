@@ -346,8 +346,7 @@ impl Handler {
     async fn send_challenge(&mut self, inbound_packet: &InboundPacket) {
         let node_address = node_address(inbound_packet);
         let id_nonce: IdNonce = rand::random();
-        let packet =
-            Packet::new_whoareyou(inbound_packet.header.message_nonce, id_nonce, 0);
+        let packet = Packet::new_whoareyou(inbound_packet.header.message_nonce, id_nonce, 0);
         let challenge_data =
             ChallengeData::try_from(packet.authenticated_data::<DefaultProtocolId>().as_slice())
                 .expect("Must be the correct challenge size");

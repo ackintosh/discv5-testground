@@ -1,8 +1,8 @@
 use crate::utils::publish_and_collect;
 use discv5::enr::k256::elliptic_curve::rand_core::RngCore;
 use discv5::enr::k256::elliptic_curve::rand_core::SeedableRng;
-use discv5::enr::{CombinedKey, EnrBuilder, NodeId};
-use discv5::{enr, Discv5, Enr, ListenConfig};
+use discv5::enr::{CombinedKey, NodeId};
+use discv5::{Discv5, Enr, ListenConfig};
 use serde::{Deserialize, Serialize};
 use std::u64;
 use testground::client::Client;
@@ -59,7 +59,7 @@ impl MonopolizingByIncomingNodes {
         // Construct a local Enr
         // ////////////////////////
         let enr_key = Self::generate_deterministic_keypair(client.group_seq(), &role);
-        let enr = EnrBuilder::new("v4")
+        let enr = Enr::builder()
             .ip(run_parameters
                 .data_network_ip()?
                 .expect("IP address for the data network"))

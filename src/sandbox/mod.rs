@@ -3,10 +3,10 @@ use crate::mock::{
     Mock, Request, Response,
 };
 use crate::utils::publish_and_collect;
-use discv5::enr::{CombinedKey, EnrBuilder};
+use discv5::enr::{CombinedKey, NodeId};
 use discv5::rpc::ResponseBody;
 use discv5::{Discv5, Enr, ListenConfig};
-use enr::{k256, NodeId};
+use enr::k256;
 use rand::{RngCore, SeedableRng};
 use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;
@@ -39,14 +39,14 @@ pub(crate) async fn run(client: Client) -> Result<(), Box<dyn std::error::Error>
 
     let target_enr = {
         let target_key = keypairs.pop().unwrap();
-        EnrBuilder::new("v4").build(&target_key).expect("enr")
+        Enr::builder().build(&target_key).expect("enr")
     };
 
     // ////////////////////////
     // Construct local Enr
     // ////////////////////////
     let enr_key = keypairs.remove(client.global_seq() as usize - 1);
-    let enr = EnrBuilder::new("v4")
+    let enr = Enr::builder()
         .ip(ip)
         .udp4(9000)
         .build(&enr_key)

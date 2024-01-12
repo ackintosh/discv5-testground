@@ -2,7 +2,7 @@ mod params;
 
 use crate::ip_change::params::Params;
 use crate::utils::publish_and_collect;
-use discv5::enr::{CombinedKey, EnrBuilder};
+use discv5::enr::CombinedKey;
 use discv5::{Discv5, Enr, ListenConfig};
 use serde::{Deserialize, Serialize};
 use std::net::{IpAddr, Ipv4Addr};
@@ -32,7 +32,7 @@ pub(crate) async fn run(client: Client) -> Result<(), Box<dyn std::error::Error>
     // Construct local Enr
     // ////////////////////////
     let enr_key = CombinedKey::generate_secp256k1();
-    let enr = EnrBuilder::new("v4")
+    let enr = Enr::builder()
         .ip(ip)
         .udp4(9000)
         .build(&enr_key)
