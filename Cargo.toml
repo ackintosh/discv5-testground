@@ -10,7 +10,7 @@ name = "discv5-testground"
 path = "src/main.rs"
 
 [dependencies]
-chrono = "0.4.31"
+chrono = "0.4.33"
 # Speed up ENR update
 # https://github.com/sigp/discv5/commit/a9ded0490229418cb61e747d55d3e0879b62e1d7
 discv5 = { git = "https://github.com/sigp/discv5.git", rev = "a9ded0490229418cb61e747d55d3e0879b62e1d7" }
