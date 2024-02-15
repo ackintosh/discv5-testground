@@ -101,3 +101,13 @@ instances = { min = 2, max = 3, default = 2 }
 
 [testcases.params]
 latency = { type = "int", desc = "Latency between peers.", unit = "ms", default = 100 }
+
+# #############################################################################
+# Talk
+# #############################################################################
+[[testcases]]
+name = "talk"
+instances = { min = 2, max = 2, default = 2 }
+
+[testcases.params]
+latency = { type = "int", desc = "Latency between peers.", unit = "ms", default = 100 }

@@ -27,6 +27,7 @@ testground run single \
 - [eclipse-attack-monopolizing-by-incoming-nodes](#eclipse-attack-monopolizing-by-incoming-nodes)
 - [enr-update](#enr-update)
 - [ip-change](#ip-change)
+- [talk](#talk)
 
 ### [`find-node`](#test-cases)
 
@@ -146,6 +147,20 @@ sequenceDiagram
     Node1 ->> Node2 ... Node N: PING
     Node2 ... Node N ->> Node1: PING
     end
+```
+
+### [`talk`](#test-cases)
+
+This test plan runs simple TALKREQ/TALKRESP communication between two nodes.
+
+```shell
+testground run single \
+  --plan=discv5-testground \
+  --testcase=talk \
+  --builder=docker:generic \
+  --runner=local:docker \
+  --instances=2 \
+  --wait
 ```
 
 ## Metrics

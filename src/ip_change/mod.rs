@@ -120,7 +120,7 @@ pub(crate) async fn run(client: Client) -> Result<(), Box<dyn std::error::Error>
     tokio::time::sleep(Duration::from_secs(params.duration_after)).await;
 
     if instance_info.seq == 1 {
-        println!("debugggg: {:?}", discv5.table_entries());
+        println!("debug: {:?}", discv5.table_entries());
     }
 
     client.record_success().await?;

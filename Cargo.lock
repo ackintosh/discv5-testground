@@ -81,6 +81,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0942ffc6dcaadf03badf6e6a2d0228460359d5e34b57ccdc720b7382dfbd5ec5"
 
 [[package]]
+name = "alloy-rlp"
+version = "0.3.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8d58d9f5da7b40e9bfff0b7e7816700be4019db97d4b6359fe7f94a9e22e42ac"
+dependencies = [
+ "arrayvec",
+ "bytes",
+]
+
+[[package]]
 name = "android-tzdata"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -425,11 +435,11 @@ dependencies = [
 [[package]]
 name = "discv5"
 version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "63b0b31b65aa1fcbd4e0171f1afed5363ccf25efb988ecd42450036f4c6d8539"
+source = "git+https://github.com/armaganyildirak/discv5.git?rev=f86b64af16bfb74c9252e454d2bd52571e0b69d3#f86b64af16bfb74c9252e454d2bd52571e0b69d3"
 dependencies = [
  "aes",
  "aes-gcm",
+ "alloy-rlp",
  "arrayvec",
  "delay_map",
  "enr 0.10.0",
@@ -443,12 +453,10 @@ dependencies = [
  "more-asserts",
  "parking_lot",
  "rand",
- "rlp",
  "smallvec",
  "socket2 0.4.9",
  "tokio",
  "tracing",
- "tracing-subscriber",
  "uint",
  "zeroize",
 ]
@@ -563,9 +571,9 @@ dependencies = [
 [[package]]
 name = "enr"
 version = "0.10.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2a3d8dc56e02f954cac8eb489772c552c473346fc34f67412bb6244fd647f7e4"
+source = "git+https://github.com/sigp/enr?rev=77bde01922fb0b79b0c12bdecc1511b324e8f06c#77bde01922fb0b79b0c12bdecc1511b324e8f06c"
 dependencies = [
+ "alloy-rlp",
  "base64 0.21.2",
  "bytes",
  "ed25519-dalek",
@@ -573,7 +581,6 @@ dependencies = [
  "k256",
  "log",
  "rand",
- "rlp",
  "serde",
  "sha3",
  "zeroize",

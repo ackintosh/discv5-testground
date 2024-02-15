@@ -5,6 +5,7 @@ mod find_node;
 mod ip_change;
 mod mock;
 mod sandbox;
+mod talk;
 mod utils;
 
 use testground::client::Client;
@@ -79,6 +80,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         "enr-update" => enr_update::run(client.clone()).await?,
         "ip-change" => ip_change::run(client).await?,
         "sandbox" => sandbox::run(client).await?,
+        "talk" => talk::run(client).await?,
         _ => unreachable!(),
     };
 

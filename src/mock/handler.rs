@@ -156,7 +156,7 @@ impl Handler {
             PacketKind::Handshake { .. } => {
                 self.do_actions(inbound_packet, behaviour.handshake.clone())
                     .await;
-            }
+            } // PacketKind::SessionMessage { .. } => todo!(),
         }
     }
 
@@ -259,6 +259,8 @@ impl Handler {
                                     }
                                 }
                                 Message::Response(_) => todo!(),
+                                // Message::RelayInitNotification(_) => todo!(),
+                                // Message::RelayMsgNotification(_) => todo!(),
                             }
                         } else {
                             panic!("Session does not exist.")
@@ -272,7 +274,7 @@ impl Handler {
 
                 // Action
                 self.do_actions(inbound_packet, behaviour.actions).await;
-            }
+            } // PacketKind::SessionMessage { .. } => todo!(),
         }
     }
 
@@ -309,6 +311,8 @@ impl Handler {
                         let request = match decode_message(session, &inbound_packet) {
                             Message::Request(request) => request,
                             Message::Response(_) => unreachable!(),
+                            // Message::RelayInitNotification(_) => todo!(),
+                            // Message::RelayMsgNotification(_) => todo!(),
                         };
                         match response {
                             mock::Response::Default => {
@@ -337,6 +341,8 @@ impl Handler {
                     self.captured_requests.push(request);
                 }
                 Message::Response(_) => unreachable!(),
+                // Message::RelayInitNotification(_) => todo!(),
+                // Message::RelayMsgNotification(_) => todo!(),
             }
         } else {
             panic!("Session does not exist.")
@@ -480,6 +486,7 @@ fn node_address(inbound_packet: &InboundPacket) -> NodeAddress {
         PacketKind::Message { src_id } => src_id,
         PacketKind::WhoAreYou { .. } => unreachable!(),
         PacketKind::Handshake { src_id, .. } => src_id,
+        // PacketKind::SessionMessage { .. } => todo!(),
     };
 
     NodeAddress {
