@@ -64,14 +64,17 @@ pub(super) async fn run(client: Client) -> Result<(), Box<dyn std::error::Error>
         .signal_and_wait(STATE_READY_TO_START_SIM, run_parameters.test_instance_count)
         .await?;
 
-    let protocol: Vec<u8> = vec![1];
-    let request: Vec<u8> = vec![1, 2, 3];
-    let response: Vec<u8> = vec![4, 5, 6];
+    let protocol = "PROTOCOL".as_bytes();
+    let request = "A REQUEST".as_bytes();
+    let response = "A RESPONSE".as_bytes();
 
     let test_result = match client.global_seq() {
         1 => {
             // Send TALKREQ
-            match discv5.talk_req(another_node.enr, protocol, request).await {
+            match discv5
+                .talk_req(another_node.enr, protocol.to_vec(), request.to_vec())
+                .await
+            {
                 Ok(talk_response) => {
                     if talk_response == response {
                         Ok(())
@@ -91,8 +94,8 @@ pub(super) async fn run(client: Client) -> Result<(), Box<dyn std::error::Error>
             while let Some(event) = event_stream.recv().await {
                 match event {
                     Event::TalkRequest(talk_request) => {
-                        if talk_request.protocol() == &protocol && talk_request.body() == &request {
-                            if let Err(e) = talk_request.respond(response.clone()) {
+                        if talk_request.protocol() == protocol && talk_request.body() == request {
+                            if let Err(e) = talk_request.respond(response.to_vec()) {
                                 result = Err(e.to_string());
                             }
                         } else {
