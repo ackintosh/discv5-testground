@@ -303,7 +303,7 @@ testground run single \
   --wait
 ```
 
-### [`sandbox`](#sandbox)
+### [`sandbox`](#test-cases)
 
 This is a special test plan where the test flow is undefined, used for experiments to debug.
 
