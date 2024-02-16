@@ -1,7 +1,11 @@
+mod concurrent_requests;
 mod eclipse;
 mod enr_update;
 mod find_node;
 mod ip_change;
+mod mock;
+mod sandbox;
+mod talk;
 mod utils;
 
 use testground::client::Client;
@@ -61,6 +65,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // //////////////////////////////////////////////////////////////
     match client.run_parameters().test_case.clone().as_str() {
         "find-node" => find_node::run(client.clone()).await?,
+        "concurrent-requests" => concurrent_requests::run(client).await?,
+        "concurrent-requests_whoareyou-timeout" => {
+            concurrent_requests::whoareyou_timeout::run(client).await?
+        }
+        "concurrent-requests_before-establishing-session" => {
+            concurrent_requests::before_establishing_session::run(client).await?
+        }
         "eclipse-attack-monopolizing-by-incoming-nodes" => {
             eclipse::MonopolizingByIncomingNodes::new()
                 .run(client.clone())
@@ -68,6 +79,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
         "enr-update" => enr_update::run(client.clone()).await?,
         "ip-change" => ip_change::run(client).await?,
+        "sandbox" => sandbox::run(client).await?,
+        "talk" => talk::run(client).await?,
         _ => unreachable!(),
     };
 

@@ -2,8 +2,8 @@ mod params;
 
 use crate::ip_change::params::Params;
 use crate::utils::publish_and_collect;
-use discv5::enr::{CombinedKey, EnrBuilder};
-use discv5::{Discv5, Discv5ConfigBuilder, Enr, ListenConfig};
+use discv5::enr::CombinedKey;
+use discv5::{Discv5, Enr, ListenConfig};
 use serde::{Deserialize, Serialize};
 use std::net::{IpAddr, Ipv4Addr};
 use std::time::Duration;
@@ -32,7 +32,7 @@ pub(crate) async fn run(client: Client) -> Result<(), Box<dyn std::error::Error>
     // Construct local Enr
     // ////////////////////////
     let enr_key = CombinedKey::generate_secp256k1();
-    let enr = EnrBuilder::new("v4")
+    let enr = Enr::builder()
         .ip(ip)
         .udp4(9000)
         .build(&enr_key)
@@ -45,7 +45,7 @@ pub(crate) async fn run(client: Client) -> Result<(), Box<dyn std::error::Error>
         ip: Ipv4Addr::UNSPECIFIED,
         port: 9000,
     };
-    let config = Discv5ConfigBuilder::new(listen_config)
+    let config = discv5::ConfigBuilder::new(listen_config)
         .vote_duration(Duration::from_secs(params.vote_duration))
         .ping_interval(Duration::from_secs(params.ping_interval))
         .enr_peer_update_min(run_parameters.test_instance_count as usize - 1)
@@ -120,7 +120,7 @@ pub(crate) async fn run(client: Client) -> Result<(), Box<dyn std::error::Error>
     tokio::time::sleep(Duration::from_secs(params.duration_after)).await;
 
     if instance_info.seq == 1 {
-        println!("debugggg: {:?}", discv5.table_entries());
+        println!("debug: {:?}", discv5.table_entries());
     }
 
     client.record_success().await?;

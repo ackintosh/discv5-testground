@@ -27,6 +27,11 @@ testground run single \
 - [eclipse-attack-monopolizing-by-incoming-nodes](#eclipse-attack-monopolizing-by-incoming-nodes)
 - [enr-update](#enr-update)
 - [ip-change](#ip-change)
+- [concurrent-requests](#concurrent-requests)
+- [concurrent-requests_whoareyou-timeout](#concurrent-requests_whoareyou-timeout)
+- [concurrent-requests_before-establishing-session](#concurrent-requests_before-establishing-session)
+- [talk](#talk)
+- [sandbox](#sandbox)
 
 ### [`find-node`](#test-cases)
 
@@ -146,6 +151,170 @@ sequenceDiagram
     Node1 ->> Node2 ... Node N: PING
     Node2 ... Node N ->> Node1: PING
     end
+```
+
+### [`concurrent-requests`](#test-cases)
+
+```shell
+testground run single \
+  --plan=discv5-testground \
+  --testcase=concurrent-requests \
+  --builder=docker:generic \
+  --runner=local:docker \
+  --instances=2 \
+  --wait
+```
+
+```mermaid
+sequenceDiagram
+    participant Node1
+    participant Node2
+    Note over Node1: Start discv5 server
+    Note over Node2: Start discv5 server
+
+    rect rgb(10, 10, 10)
+    Note left of Node1: They communicate with each other<br> to establish a session.
+    Node1 ->> Node2: message
+    Node2 ->> Node1: message
+    Note over Node1,Node2: Session established
+    end
+
+    rect rgb(100, 100, 0)
+    Note right of Node2: In this test case, Node2 session timeout <br>is set to short term (a few seconds)<br> to reproduce session expiration.
+    Note over Node2: Session expired
+    end
+
+    rect rgb(10, 10, 10)
+    Note left of Node1: Node1 sends multiple requests<br> **in parallel**.
+    par 
+    Node1 ->> Node2: FINDNODE
+    and 
+    Node1 ->> Node2: FINDNODE
+    end
+    end
+```
+
+### [`concurrent-requests_whoareyou-timeout`](#test-cases)
+
+A test case where WHOAREYOU packet times out.
+
+```shell
+testground run single \
+  --plan=discv5-testground \
+  --testcase=concurrent-requests_whoareyou-timeout \
+  --builder=docker:generic \
+  --runner=local:docker \
+  --instances=2 \
+  --wait
+```
+
+```mermaid
+sequenceDiagram
+    participant Node1
+    participant Node2
+
+    Node2 ->> Node1: Random packet
+    Node1 ->> Node2: WHOAREYOU
+    rect rgb(100, 100, 0)
+    Note over Node2: ** Discard the WHOAREYOU packet<br>to reproduce kind of network issue. **
+    end
+
+    rect rgb(10, 10, 10)
+    Note left of Node1: Node1 want to send FINDNODE to Node2<br>but active_challenge exists.<br>So insert requests into pending_requests.
+    par 
+    Note over Node1: pending_requests.insert()
+    and 
+    Note over Node1: pending_requests.insert()
+    end
+    end
+
+    rect rgb(100, 100, 0)
+    Note over Node1: The challenge in active_challenges<br>has been expired.
+    end
+```
+
+### [`concurrent-requests_before-establishing-session`](#test-cases)
+
+A test case where a node attempts to send requests in parallel before establishing a session.
+
+```shell
+testground run single \
+  --plan=discv5-testground \
+  --testcase=concurrent-requests_before-establishing-session \
+  --builder=docker:generic \
+  --runner=local:docker \
+  --instances=2 \
+  --wait
+```
+
+```mermaid
+sequenceDiagram
+    participant Node1
+    participant Node2
+
+    Note over Node1: No session with Node2
+
+    rect rgb(10, 10, 10)
+    Note left of Node1: Node1 attempts to send multiple requests in parallel <br> but no session with Node2.<br> So Node1 sends a random packet for the first request, <br>and the rest of the requests are inserted into pending_requests.
+    par
+    Node1 ->> Node2: Random packet (id:1)
+    Note over Node1: Insert the request into `active_requests`
+    and
+    Note over Node1: Insert Request(id:2) into *pending_requests*
+    and
+    Note over Node1: Insert Request(id:3) into *pending_requests*
+    end
+    end
+
+    Node2 ->> Node1: WHOAREYOU (id:1)
+
+    Note over Node1: New session established with Node2
+
+    rect rgb(0, 100, 0)
+    Note over Node1: Send pending requests since a session has been established.
+    Node1 ->> Node2: Request (id:2)
+    Node1 ->> Node2: Request (id:3)
+    end
+
+    Node1 ->> Node2: Handshake message (id:1)
+
+    Note over Node2: New session established with Node1
+
+    Node2 ->> Node1: Response (id:2)
+    Node2 ->> Node1: Response (id:3)
+    Node2 ->> Node1: Response (id:1)
+
+    Note over Node1: The request (id:2) completed.
+    Note over Node1: The request (id:3) completed.
+    Note over Node1: The request (id:1) completed.
+```
+
+### [`talk`](#test-cases)
+
+This test plan runs simple TALKREQ/TALKRESP communication between two nodes.
+
+```shell
+testground run single \
+  --plan=discv5-testground \
+  --testcase=talk \
+  --builder=docker:generic \
+  --runner=local:docker \
+  --instances=2 \
+  --wait
+```
+
+### [`sandbox`](#test-cases)
+
+This is a special test plan where the test flow is undefined, used for experiments to debug.
+
+```shell
+testground run single \
+  --plan=discv5-testground \
+  --testcase=sandbox \
+  --builder=docker:generic \
+  --runner=local:docker \
+  --instances=2 \
+  --wait
 ```
 
 ## Metrics
