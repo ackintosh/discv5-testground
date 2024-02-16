@@ -35,6 +35,6 @@ aes-gcm = "0.9.4"
 rand = "0.8.5"
 zeroize = { version = "1.4.3", features = ["zeroize_derive"] }
 # This version must be kept up to date do it uses the same dependencies as ENR
-hkdf = "0.12.3"
+hkdf = "0.12.4"
 enr = { version = "0.9.0", features = ["k256", "ed25519"] }
 # #############################################################################
