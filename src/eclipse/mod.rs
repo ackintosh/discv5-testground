@@ -177,7 +177,7 @@ impl MonopolizingByIncomingNodes {
         discv5: Discv5,
         client: Client,
         honest: &InstanceInfo,
-        attackers: &Vec<InstanceInfo>,
+        attackers: &[InstanceInfo],
     ) -> Result<(), Box<dyn std::error::Error>> {
         // Wait until the attacker has done its attack.
         client
